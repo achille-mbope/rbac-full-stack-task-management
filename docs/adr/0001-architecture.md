@@ -6,8 +6,10 @@
 
 ## Context
 
-A single team is building a task management system where users manage their own
-tasks. We need clear responsibilities and straightforward development and deployment.
+A single team is building an organizational task management system. Users create
+self-assigned tasks and manage tasks assigned to them. Administrators assign new
+tasks and supervise all tasks, including those created by users. We need clear
+responsibilities and straightforward development and deployment.
 
 ## Decision
 

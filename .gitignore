@@ -1,0 +1,64 @@
+# IDE and editor metadata
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.classpath
+.project
+.settings/
+*.swp
+*.swo
+*~
+
+# Java / Maven generated output
+**/target/
+/backend/out/
+*.class
+hs_err_pid*
+replay_pid*
+*.hprof
+
+# Angular / Node dependencies, builds, and caches
+node_modules/
+/frontend/dist/
+/frontend/out-tsc/
+/frontend/.angular/
+/frontend/.cache/
+/frontend/.npm/
+coverage/
+.nyc_output/
+
+# Logs and test reports
+*.log
+logs/
+/frontend/test-results/
+/frontend/playwright-report/
+
+# Local environment variables and secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+.envrc
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# Local database and container data
+*.mv.db
+*.trace.db
+*.h2.db
+/postgres-data/
+/docker-data/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Keep Maven Wrapper files, npm lockfiles, Docker Compose configuration,
+# application configuration templates, and API/ADR documentation versioned.
