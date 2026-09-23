@@ -11,6 +11,17 @@ The frontend needs predictable resource operations and a consistent error contra
 ## Decision
 
 - REST with JSON and resource URLs under `/api/v1`.
+- `POST /tasks` creates an automatically self-assigned task for any authenticated
+  user, including admins. Reject request-supplied assignee or creator IDs.
+- Personal `GET /tasks` and `GET/PATCH/DELETE /tasks/{taskId}` are assignee-scoped.
+- `POST /admin/tasks` accepts an explicit enabled USER or ADMIN assignee.
+  `GET /admin/tasks` lists all tasks with pagination and optional assigneeId,
+  status, and title-search filters. `GET/PATCH/DELETE /admin/tasks/{taskId}`
+  allow administrators to manage any task, regardless of creator or assignee.
+- All admin task routes require ADMIN before resource lookup. Task updates cannot
+  change assignee or creator IDs. Record admin edits and deletions as specified
+  in [ADR-0006](0006-security.md). The [OpenAPI contract](../api/openapi.json)
+  defines request/response schemas and error cases.
 - RFC 9457 Problem Details, superseding RFC 7807, with
   `Content-Type: application/problem+json`.
 - Include `type`, `title`, `status`, `detail`, and `instance`. Use stable
@@ -19,7 +30,7 @@ The frontend needs predictable resource operations and a consistent error contra
   `code`, and `message`; never echo rejected secrets.
 - Missing, invalid, or expired credentials return 401. Bearer-protected resources
   include an appropriate `WWW-Authenticate` header.
-- Insufficient role returns 403. A task belonging to another user returns 404,
+- Insufficient role returns 403. A task inaccessible to the caller returns 404,
   like a nonexistent task, as required by [ADR-0006](0006-security.md).
 - Document success/error schemas and bearer authentication using OpenAPI 3.1
   with a Spring Boot-compatible springdoc-openapi release and Swagger UI.

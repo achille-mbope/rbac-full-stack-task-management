@@ -6,21 +6,26 @@
 
 ## Context
 
-Credentials and private tasks require both authentication and backend enforcement
-of roles and ownership.
+Credentials and organizational tasks require authentication and backend enforcement
+of roles and assignment. User-created tasks are also visible to administrators.
 
 ## Decision
 
-### Roles and ownership
+### Roles and task access
 
-Version one has `USER` and `ADMIN` roles. Administrators manage accounts;
-they do not receive access to other users' private tasks.
+Version one has `USER` and `ADMIN` roles. Administrators manage accounts and can
+create tasks assigned to any enabled user or administrator. Users can create their
+own tasks, automatically assigned to themselves. All administrators may list, read,
+update, and delete all tasks, regardless of creator or assignee. Tasks are organizational
+work; v1 does not provide personal tasks hidden from administrators. This supersedes
+the earlier owner-only and creating-admin-only access rules.
 
 | Operation | USER | ADMIN |
 | --- | --- | --- |
-| Create tasks owned by the caller | Allowed | Allowed |
-| List, read, update, delete own tasks | Allowed | Allowed |
-| Access another user's tasks | Denied | Denied |
+| Create automatically self-assigned tasks | Allowed | Allowed |
+| List, read, update, delete assigned tasks | Allowed | Allowed |
+| Create tasks assigned to users or admins | Denied | Allowed |
+| List, read, update, delete all tasks | Denied | Allowed through admin routes |
 | Change own password | Allowed | Allowed |
 | List accounts, assign roles, enable/disable accounts | Denied | Allowed |
 
@@ -28,9 +33,27 @@ they do not receive access to other users' private tasks.
 - Provision the first administrator using a controlled operator procedure,
   documented during implementation. Never ship default administrator credentials.
 - The `user` module enforces account-administration permissions. The `task`
-  module enforces ownership in application services and owner-scoped queries.
-- Derive ownership from the authenticated subject, not a supplied owner ID.
-  Task updates must not transfer ownership.
+  module enforces task access in application services and access-scoped queries.
+- Ordinary creation derives assignee and creator from the authenticated subject.
+  Only POST /api/v1/admin/tasks accepts an explicit assigneeId; check ADMIN before
+  looking up the recipient. Accept enabled USER or ADMIN recipients, including self.
+  Missing recipients return 404; disabled recipients return 409. Record the creator
+  from the token, never from request data. Both IDs are immutable in v1.
+- Personal `/tasks` routes are assignee-scoped for everyone, including ADMIN.
+  Apply assignee restrictions before filtering, pagination, and counts. Missing
+  and other-assignee tasks return identical 404 responses on these routes.
+- Administrative `/admin/tasks` routes require ADMIN before task lookup and allow
+  all tasks, including user-created tasks and tasks assigned to disabled accounts.
+  Non-admin callers receive 403; authorized callers receive 404 for missing tasks.
+  Creator identity is attribution only and never grants additional access.
+- After an ADMIN role is removed, global access ends when existing ADMIN tokens
+  expire. Assignee access is independent of role. Disabling an account does not
+  revoke existing tokens or alter existing task assignments.
+- Record administrative task edits and deletions synchronously in the same database
+  transaction as the mutation: actor ID, task ID, UTC timestamp, action, and changed
+  fields with before/after values. Deletion records must survive task deletion.
+  Restrict audit access to authorized operators; never record credentials or tokens.
+  Audit retrieval is outside the public v1 API; events remain deferred.
 - Enforce permissions in the backend; Angular guards provide UX only.
 - Deny unmatched protected routes by default.
 - Existing JWTs retain previous authority until expiry as defined in
@@ -55,13 +78,15 @@ they do not receive access to other users' private tasks.
 
 ## Rationale
 
-Role checks alone do not protect individual tasks. Ownership rules preserve
-private data even from account administrators. BCrypt is retained with explicit
+Assignee checks isolate ordinary users' work. Explicit administrative routes support
+global task supervision with role enforcement and mutation auditing. BCrypt is retained with explicit
 input and cost constraints.
 
 ## Alternatives
 
-- **Admin access to all tasks:** unnecessary for account administration.
+- **Assignee-only or creating-admin-only access:** prevents other administrators
+  from supervising organizational work; superseded by the global admin policy.
+- **Private personal tasks:** would require a separate visibility policy, outside v1.
 - **Argon2id:** preferred for a future password-storage revision, particularly
   if BCrypt's input limit conflicts with passphrase requirements.
 
@@ -69,7 +94,8 @@ input and cost constraints.
 
 - HTTP security configuration lives in `auth`; business authorization stays
   with the module owning the operation.
-- Test cross-user access, role escalation, disabled-account login, and the accepted
+- Test user isolation, all-admin access, personal-route scoping, assignment authorization,
+  recipient validation, role escalation, disabled-account login, and the accepted
   JWT stale-authorization window.
 - Ownership denials follow [ADR-0004](0004-api-design.md).
 - The README must document authentication limitations and administrator bootstrap.

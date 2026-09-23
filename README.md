@@ -1,7 +1,9 @@
 # Task Manager
 
 A Spring Boot and Angular learning project focused on modular architecture,
-role-based access control, and private task management.
+role-based access control, and organizational task management.
+
+See the [changelog](CHANGELOG.md) for the latest project changes.
 
 ## Project Status
 
@@ -13,26 +15,32 @@ not an application that can currently be run.
 ## Planned Scope
 
 - Registration, login, and password changes.
-- Create, list, read, update, and delete tasks owned by the authenticated user.
+- Create automatically self-assigned tasks; list, read, update, and delete tasks assigned to you.
+- Administrators can create tasks assigned to users or other administrators,
+  and list, read, update, or delete all tasks through administrative routes.
 - An Angular interface for login, task lists, forms, and filters.
 - Administrator operations for listing accounts, assigning roles, and
   enabling or disabling accounts.
 
-Tasks remain private to their owner, including from administrators. Task
-assignment, shared tasks, and a separate viewer role are outside the accepted
-v1 scope. Detailed task fields and status transitions remain to be specified.
+All tasks, including user-created tasks, are accessible to their assignee and all
+administrators. Personal `/tasks` routes remain assignee-scoped; `/admin/tasks`
+provides global administrative access. Reassignment after creation,
+general task sharing, and a separate viewer role are outside the accepted
+v1 scope. Draft task fields and status transitions are defined in the
+[API contract](docs/api/README.md).
 
 ### Roles and Permissions
 
 | Operation | USER | ADMIN |
 | --- | --- | --- |
-| Create and manage own tasks | Allowed | Allowed |
-| Access another user's tasks | Denied | Denied |
+| Create self-assigned tasks and manage assigned tasks | Allowed | Allowed |
+| Create tasks assigned to users or admins | Denied | Allowed |
+| List, read, update, delete all tasks | Denied | Allowed through admin routes |
 | Change own password | Allowed | Allowed |
 | List accounts, assign roles, enable/disable accounts | Denied | Allowed |
 
 Registration always assigns `USER`. Backend services enforce permissions and
-task ownership; frontend guards only control navigation. See
+task assignment boundaries; frontend guards only control navigation. See
 [ADR-0006](docs/adr/0006-security.md) for the authorization policy.
 
 ## Planned Technology Baseline
@@ -74,12 +82,13 @@ Angular SPA communicating over REST.
 | --- | --- | --- |
 | `auth` | Login, tokens, HTTP security configuration | `user`, `common` |
 | `user` | Accounts, credentials, roles, account administration | `common` |
-| `task` | Task lifecycle and ownership enforcement | `common` |
+| `task` | Task lifecycle, assignment, and access enforcement | `user`, `common` |
 | `common` | Small domain-neutral shared types and utilities | None |
 
 All modules are closed. Public service contracts and DTOs belong in module root
 packages; implementations, entities, and repositories remain internal. Tasks
-store a stable owner ID without cross-module JPA associations.
+store stable assignee and creator IDs without cross-module JPA associations.
+Assignment validates recipients through the public `user` API synchronously.
 
 Spring Modulith verification tests will check module cycles, internal-package
 access, and explicit dependency allowlists during Maven verification. Skipping
@@ -106,6 +115,10 @@ H2 runs do not validate PostgreSQL behavior. Persistence changes must pass
 PostgreSQL integration tests. See [ADR-0002](docs/adr/0002-database.md).
 
 ## API and Authentication
+
+The draft [OpenAPI 3.1 contract](docs/api/openapi.json) defines endpoints, request
+and response schemas, validation, and errors. See the [contract guide](docs/api/README.md)
+for task lifecycle rules and design choices pending implementation.
 
 The planned API uses REST and JSON under `/api/v1`, with RFC 9457 Problem
 Details errors (`application/problem+json`). OpenAPI will document operations,
@@ -169,9 +182,11 @@ non-interactive frontend test command will be documented alongside implementatio
 ## V1 Delivery Checklist
 
 - [ ] Backend and frontend scaffolded with pinned tools and dependencies.
-- [ ] Task fields, validation, and lifecycle specified in the API contract.
+- [x] Task fields, validation, and lifecycle specified in the draft API contract.
 - [ ] Registration, login, expiry, logout, and password changes work end to end.
-- [ ] Ownership isolation and role-escalation attempts covered by tests.
+- [ ] User isolation, admin access to all tasks, and role-escalation attempts covered by tests.
+- [ ] Self-assignment and admin assignment to users/admins verified.
+- [ ] Administrative task edits and deletions recorded in transactional audit records.
 - [ ] Account administration and documented administrator bootstrap work.
 - [ ] Disabled-account login and the accepted stale-token behavior verified.
 - [ ] Module verification passes as part of Maven verification.

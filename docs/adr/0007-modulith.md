@@ -19,7 +19,7 @@ has a `package-info.java` with `@ApplicationModule` and explicit
 | --- | --- | --- |
 | `auth` | Login, token issuance/validation, HTTP security | `user`, `common` |
 | `user` | Accounts, password hashes, roles, account administration | `common` |
-| `task` | Task lifecycle and ownership enforcement | `common` |
+| `task` | Task lifecycle, assignment, and task access enforcement | `user`, `common` |
 | `common` | Small domain-neutral shared types/utilities | None |
 
 - For `common`, specify `allowedDependencies = {}`; do not leave it unspecified.
@@ -27,9 +27,15 @@ has a `package-info.java` with `@ApplicationModule` and explicit
   JPA entities, and repositories in internal subpackages.
 - The `user` API provides credential verification and returns an identity/roles
   result without exposing password hashes.
+- For admin task assignment, the `user` API also exposes a synchronous account
+  lookup returning the stable account ID and enabled status. The `task` module
+  uses this public contract to validate recipients; it does not access user repositories.
 - Business services obtain the authenticated principal through Spring Security,
-  without depending on `auth` internals. Tasks store a stable owner ID without
-  cross-module JPA associations.
+  without depending on `auth` internals. Tasks store stable assignee and creator IDs
+  without cross-module JPA associations. Assignment is synchronous; events remain deferred.
+- The `task` module enforces assignee-scoped personal operations and ADMIN-only
+  global operations. Creator IDs are attribution, not access grants. It also owns
+  synchronous audit persistence for admin edits/deletions, in the mutation transaction.
 - Do not put business entities, repositories, or shared business services in
   `common`. Add shared types only when needed by actual consumers.
 
