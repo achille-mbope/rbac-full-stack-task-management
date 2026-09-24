@@ -1,10 +1,41 @@
 # Changelog
 
-Notable project changes are recorded here, newest first. The project is in the
-design stage and has no tagged releases. Entries below describe documentation
-and accepted plans; application features have not yet been implemented.
+Notable project changes are recorded here, newest first. The project has no tagged
+releases. Backend implementation has started; the HTTP API and frontend remain planned.
 
 ## Unreleased
+
+### User module DDD refactor
+
+- Organized user-module internals into domain, application, application ports, and
+  infrastructure packages while preserving the public module contracts.
+- Added a framework-independent account model and immutable role values that enforce
+  the mandatory USER grant; moved password policy into the domain layer.
+- Routed all account use cases through `AccountStore` and introduced ports for
+  the current principal, password hashing, and email normalization.
+- Isolated JPA mapping and duplicate-email error translation in the persistence
+  adapter, preserving transaction boundaries and updates to changed columns only.
+- Reorganized tests alongside their owning layers, added dependency-boundary checks,
+  and shared account contract tests between H2 and PostgreSQL.
+- Verified compilation and 53 Docker-free tests. Full PostgreSQL verification remains
+  blocked by an unavailable Docker environment.
+- Updated backend architecture and testing documentation. HTTP controllers and JWT
+  integration remain pending.
+
+### User module implementation
+
+- Added closed user-module APIs for registration, credential verification, own-password
+  changes, account lookup, and ADMIN-only account listing, roles, and enabled status.
+- Added BCrypt strength 12, Unicode-aware password validation, normalized unique email
+  storage, immutable public account views, and service-level authorization.
+- Added the initial Flyway migration, disposable H2 and persistent PostgreSQL profiles,
+  PostgreSQL Testcontainers tests, and generated Modulith boundary documentation.
+- Used test-first cycles for validation and account behavior; covered concurrent
+  duplicate registration and consistent duplicate errors in PostgreSQL and H2.
+- Corrected the scaffold's Testcontainers import for Boot 3 and pinned PostgreSQL 16.
+  Removed the unused Modulith JPA event starter because events remain deferred.
+- Documented setup, module interfaces, and operator promotion/recovery. REST adapters,
+  JWT security, and initial administrator registration await auth integration.
 
 ### Added
 

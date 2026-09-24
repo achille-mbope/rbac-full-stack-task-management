@@ -7,10 +7,11 @@ See the [changelog](CHANGELOG.md) for the latest project changes.
 
 ## Project Status
 
-**Design stage:** the repository contains architecture decisions and application
-directories. Backend and frontend code, build files, tests, and Docker Compose
-configuration have not been scaffolded. Features below describe the planned v1,
-not an application that can currently be run.
+**Backend implementation started:** the Spring Boot application and Maven Wrapper
+are present. The `user` module provides tested account services and persistence,
+including PostgreSQL migrations. See [backend setup and module API](backend/README.md).
+HTTP/auth integration, task management, the frontend, and Docker Compose are pending.
+Features below describe the full planned v1, not currently available HTTP endpoints.
 
 ## Planned Scope
 
@@ -60,8 +61,8 @@ task assignment boundaries; frontend guards only control navigation. See
 | Schema migrations | Flyway |
 | Authentication | HS256 JWT bearer tokens |
 
-Exact tool and dependency versions will be pinned when scaffolding. Version
-selection and maintenance requirements are defined in
+Backend versions are pinned in its POM and Maven Wrapper. Frontend versions remain
+to be pinned. Version selection and maintenance requirements are defined in
 [ADR-0005](docs/adr/0005-build-tool.md).
 
 ## Architecture
@@ -71,7 +72,7 @@ Angular SPA communicating over REST.
 
 | Location | Purpose | Current state |
 | --- | --- | --- |
-| `backend/` | Spring Boot modular monolith | Not scaffolded |
+| `backend/` | Spring Boot modular monolith | User services and persistence implemented |
 | `frontend/` | Angular SPA | Not scaffolded |
 | `docs/adr/` | Accepted architecture decisions | Available |
 | `docker-compose.yml` | Local PostgreSQL infrastructure | Planned |
@@ -151,11 +152,12 @@ See [authentication](docs/adr/0003-authentication.md),
 
 ## Getting Started
 
-There is no runnable application yet. Start with the architecture decisions below.
+The backend can start with disposable H2 and can run its account-service tests.
+Follow the [backend guide](backend/README.md); HTTP endpoints and the frontend are pending.
 
-Once scaffolded, development will require Java 21, the selected Node.js/npm
-versions, and a Docker-compatible container runtime for PostgreSQL integration
-tests. The repository will provide Maven Wrapper scripts and a frontend lockfile.
+Backend development requires Java 21+ and a Docker-compatible container runtime
+for PostgreSQL integration tests. Use the committed Maven Wrapper. Node.js/npm
+and a frontend lockfile will be needed when frontend implementation begins.
 
 The planned verification commands are:
 
@@ -165,9 +167,9 @@ The planned verification commands are:
 | `frontend/` | `npm ci` | Install locked dependencies |
 | `frontend/` | `npm run build` | Build the frontend |
 
-These commands become usable after the corresponding build files are added.
-Startup commands, environment examples, administrator bootstrap, and a
-non-interactive frontend test command will be documented alongside implementation.
+The backend verification command is available now. Frontend commands remain planned.
+The backend guide describes startup, environment variables, module contracts, and
+the operator promotion/recovery procedure; initial HTTP registration awaits auth.
 
 ## Architecture Decision Records
 
@@ -189,8 +191,8 @@ non-interactive frontend test command will be documented alongside implementatio
 - [ ] Administrative task edits and deletions recorded in transactional audit records.
 - [ ] Account administration and documented administrator bootstrap work.
 - [ ] Disabled-account login and the accepted stale-token behavior verified.
-- [ ] Module verification passes as part of Maven verification.
-- [ ] PostgreSQL migrations and persistence behavior pass integration tests.
+- [x] Module verification passes as part of Maven verification.
+- [x] Initial user migration and account persistence pass PostgreSQL integration tests.
 - [ ] Validation, 401, 403, and ownership-related 404 errors follow the API contract.
 - [ ] Frontend login, task list, forms, and filters work with the backend.
 - [ ] Local Compose starts PostgreSQL; application startup is documented separately.
