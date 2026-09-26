@@ -1,13 +1,13 @@
 package net.mbope.taskmanager.user.internal.domain;
 
-import net.mbope.taskmanager.user.Account;
-import net.mbope.taskmanager.user.Role;
-
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+
+import net.mbope.taskmanager.user.Account;
+import net.mbope.taskmanager.user.Role;
 
 /**
  * Account state and transitions, independent of persistence and security frameworks.

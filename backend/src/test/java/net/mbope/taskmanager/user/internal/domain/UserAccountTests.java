@@ -1,13 +1,13 @@
 package net.mbope.taskmanager.user.internal.domain;
 
-import net.mbope.taskmanager.user.Role;
-import net.mbope.taskmanager.user.UserValidationException;
-import org.junit.jupiter.api.Test;
-
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+
+import net.mbope.taskmanager.user.Role;
+import net.mbope.taskmanager.user.UserValidationException;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.*;
 

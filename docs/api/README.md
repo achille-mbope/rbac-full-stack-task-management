@@ -1,8 +1,15 @@
 # API Contract
 
 [openapi.json](openapi.json) is the OpenAPI 3.1 contract for the planned v1 API.
-Its version is `0.1.0-draft`; it describes intended behavior, not a deployed API.
+Its version is `0.1.0-draft`. Account registration, login, password changes, and
+administrator account operations are implemented in the backend. Task operations
+remain planned; runtime-generated OpenAPI and Swagger UI are not yet available.
 Import it into an OpenAPI 3.1-compatible viewer or client generator.
+
+For manual testing of the implemented authentication endpoints, follow the
+[Postman registration and login walkthrough](../../backend/README.md#test-registration-and-login-with-postman).
+It covers local startup, JSON bodies, bearer tokens, and expected success and error
+responses. Task routes in this draft contract are not available for testing yet.
 
 ## Scope and design choices
 

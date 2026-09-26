@@ -62,3 +62,6 @@ Desktop.ini
 
 # Keep Maven Wrapper files, npm lockfiles, Docker Compose configuration,
 # application configuration templates, and API/ADR documentation versioned.
+
+# Machine-local backend development configuration
+/backend/.local/

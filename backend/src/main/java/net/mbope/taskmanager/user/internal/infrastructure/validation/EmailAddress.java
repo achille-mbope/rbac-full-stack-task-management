@@ -1,15 +1,15 @@
 package net.mbope.taskmanager.user.internal.infrastructure.validation;
 
-import net.mbope.taskmanager.user.internal.application.port.EmailNormalizer;
-
 import jakarta.validation.Validator;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import net.mbope.taskmanager.user.UserValidationException;
-import org.springframework.stereotype.Component;
 
 import java.util.Locale;
+
+import net.mbope.taskmanager.user.UserValidationException;
+import net.mbope.taskmanager.user.internal.application.port.EmailNormalizer;
+import org.springframework.stereotype.Component;
 
 @Component
 final class EmailAddress implements EmailNormalizer {

@@ -1,19 +1,23 @@
 package net.mbope.taskmanager.user.internal.infrastructure.validation;
 
+import jakarta.validation.Validation;
+import jakarta.validation.ValidatorFactory;
+
+import java.util.Locale;
+
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.Locale;
-
 import static org.assertj.core.api.Assertions.*;
 
 class EmailAddressTests {
-    private static final jakarta.validation.ValidatorFactory VALIDATORS = jakarta.validation.Validation.buildDefaultValidatorFactory();
+    private static final ValidatorFactory VALIDATORS = Validation.buildDefaultValidatorFactory();
     private final EmailAddress emailAddress = new EmailAddress(VALIDATORS.getValidator());
 
-    @org.junit.jupiter.api.AfterAll
+    @AfterAll
     static void closeValidatorFactory() {
         VALIDATORS.close();
     }

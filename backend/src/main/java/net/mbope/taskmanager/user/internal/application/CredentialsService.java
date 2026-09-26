@@ -1,15 +1,21 @@
 package net.mbope.taskmanager.user.internal.application;
 
-import net.mbope.taskmanager.user.internal.application.port.*;
-import net.mbope.taskmanager.user.internal.domain.*;
-
-import net.mbope.taskmanager.user.*;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.Clock;
 import java.util.Optional;
 import java.util.UUID;
+
+import net.mbope.taskmanager.user.AccountIdentity;
+import net.mbope.taskmanager.user.AccountNotFoundException;
+import net.mbope.taskmanager.user.UserCredentials;
+import net.mbope.taskmanager.user.UserValidationException;
+import net.mbope.taskmanager.user.internal.application.port.AccountStore;
+import net.mbope.taskmanager.user.internal.application.port.CurrentAccount;
+import net.mbope.taskmanager.user.internal.application.port.EmailNormalizer;
+import net.mbope.taskmanager.user.internal.application.port.PasswordHasher;
+import net.mbope.taskmanager.user.internal.domain.PasswordPolicy;
+import net.mbope.taskmanager.user.internal.domain.UserAccount;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional(readOnly = true)

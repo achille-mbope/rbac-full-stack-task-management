@@ -1,8 +1,13 @@
 package net.mbope.taskmanager.user.internal.application;
 
+import java.time.Clock;
+import java.util.Set;
+import java.util.UUID;
+
+import net.mbope.taskmanager.user.Role;
+import net.mbope.taskmanager.user.UserValidationException;
 import net.mbope.taskmanager.user.internal.application.port.AccountStore;
 import net.mbope.taskmanager.user.internal.application.port.CurrentAccount;
-import net.mbope.taskmanager.user.UserValidationException;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.*;
@@ -12,7 +17,7 @@ class AccountAuthorizationTests {
     private final AccountStore accounts = mock(AccountStore.class);
     private final CurrentAccount current = mock(CurrentAccount.class);
     private final AccountAdministrationService service =
-            new AccountAdministrationService(accounts, current, java.time.Clock.systemUTC());
+            new AccountAdministrationService(accounts, current, Clock.systemUTC());
 
     @Test
     void checksAuthorizationBeforeValidationAndRepositoryAccess() {
@@ -26,8 +31,8 @@ class AccountAuthorizationTests {
 
     @Test
     void validatesRolesBeforeLookingUpAccount() {
-        assertThatThrownBy(() -> service.replaceRoles(java.util.UUID.randomUUID(),
-                java.util.Set.of(net.mbope.taskmanager.user.Role.ADMIN)))
+        assertThatThrownBy(() -> service.replaceRoles(UUID.randomUUID(),
+                Set.of(Role.ADMIN)))
                 .isInstanceOf(UserValidationException.class);
         verify(current).requireAdmin();
         verifyNoInteractions(accounts);

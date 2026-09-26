@@ -19,7 +19,11 @@ tokens without server-side sessions or refresh tokens.
 - Include stable user ID (`sub`), roles, `iss`, `aud`, `iat`, and `exp`.
   Validate signature, allowed algorithm, issuer, audience, and expiration.
 - Load `JWT_SECRET` from the environment: at least 256 bits of cryptographically
-  random key material. Fail startup for missing or invalid configuration.
+  random key material, encoded as Base64. Fail startup for missing or invalid configuration.
+- For local H2 development, a one-time setup may generate the key in Git-ignored
+  `backend/.local/application.properties`. Only the H2 profile imports this file;
+  environment configuration takes precedence. PostgreSQL/deployed profiles continue
+  to require an external key. No shared development key is committed.
 - Disabled accounts cannot obtain new tokens.
 
 ### Token lifecycle

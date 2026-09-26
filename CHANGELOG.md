@@ -1,9 +1,72 @@
 # Changelog
 
 Notable project changes are recorded here, newest first. The project has no tagged
-releases. Backend implementation has started; the HTTP API and frontend remain planned.
+releases. Account HTTP endpoints and JWT authentication are implemented; task endpoints
+and the frontend remain planned.
 
 ## Unreleased
+
+### Postman authentication walkthrough
+
+- Added backend startup, registration and login requests, bearer-token handling,
+  expected error responses, and H2 restart behavior to the backend guide.
+- Linked the walkthrough from the main README and API documentation and documented
+  the focused account HTTP/JWT test command.
+
+### HTTP security documentation
+
+- Updated the main README and backend guide to describe `HttpSecurityConfiguration`:
+  servlet-only activation, stateless requests with request caching disabled,
+  public registration/login, ADMIN-only administrative routes, and authentication
+  for all other routes.
+- Documented conversion of the JWT `roles` claim to `ROLE_`-prefixed authorities
+  and summarized the disabled authentication mechanisms in the main README.
+
+### Local development startup
+
+- Added an idempotent `backend/setup-local.ps1` to generate a machine-local signing
+  key in a Git-ignored file, imported only by the H2 development profile.
+- After one-time setup, H2 starts with `.\mvnw.cmd spring-boot:run` without
+  setting a signing key in each terminal. External keys override the local file;
+  PostgreSQL/deployed profiles still require external key configuration.
+
+### Clean-code refactor
+
+- Clarified implemented versus planned features, security-component ownership,
+  route authorization order, and clean-build/PostgreSQL verification instructions.
+
+- Split account HTTP handling into registration, password, and administration
+  controllers with dedicated request types.
+- Made login return a typed token response and centralized credential-rejection
+  mapping in controller advice.
+- Separated CORS policy, security error responses, JWT claim validation, and shared
+  token settings from security configuration.
+- Simplified validation error mapping, standardized Java imports and formatting,
+  named policy limits, and removed empty Maven scaffold metadata.
+- Extended dependency-boundary tests across all modules and gave JWT rejection
+  scenarios individual test names for clearer failures.
+- Verified a clean package build and 92 Docker-free tests; PostgreSQL verification
+  requires an available Docker environment.
+
+### Account HTTP API and authentication
+
+- Added registration, login, own-password change, and administrator account
+  listing, role replacement, and enabled-status endpoints under `/api/v1`.
+- Added a closed auth module for login orchestration and HS256 bearer tokens with
+  a 15-minute lifetime, validated issuer/audience, UUID subjects, and role claims.
+- Required Base64-encoded `JWT_SECRET` with at least 32 bytes of key material;
+  missing or invalid configuration fails startup, with no application default.
+- Added stateless HTTP security, ADMIN checks before request handling, explicit
+  CORS origin allowlists, and rejection of cookie/query-string authentication.
+- Added shared Problem Details responses for validation, account conflicts,
+  authentication, authorization, routing, and unexpected errors. Request DTOs
+  reject unknown fields and redact credentials in string representations.
+- Covered HTTP administrator bootstrap, generic login failures, expired/tampered
+  tokens, missing secrets, and the accepted stale-token authorization window.
+- Updated setup, API status, and operator instructions. Task endpoints, the frontend,
+  and runtime OpenAPI/Swagger UI remain pending.
+- Verified packaging and 79 Docker-free tests. Full verification was attempted;
+  15 PostgreSQL-dependent tests could not start because Docker was unavailable.
 
 ### User module DDD refactor
 

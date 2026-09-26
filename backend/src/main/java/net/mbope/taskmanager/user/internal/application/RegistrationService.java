@@ -1,14 +1,16 @@
 package net.mbope.taskmanager.user.internal.application;
 
-import net.mbope.taskmanager.user.internal.application.port.*;
-import net.mbope.taskmanager.user.internal.domain.*;
+import java.time.Clock;
 
 import net.mbope.taskmanager.user.Account;
 import net.mbope.taskmanager.user.AccountRegistration;
+import net.mbope.taskmanager.user.internal.application.port.AccountStore;
+import net.mbope.taskmanager.user.internal.application.port.EmailNormalizer;
+import net.mbope.taskmanager.user.internal.application.port.PasswordHasher;
+import net.mbope.taskmanager.user.internal.domain.PasswordPolicy;
+import net.mbope.taskmanager.user.internal.domain.UserAccount;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Clock;
 
 @Service
 @Transactional
@@ -29,6 +31,8 @@ class RegistrationService implements AccountRegistration {
     public Account register(String email, String password) {
         String normalized = emails.normalize(email);
         PasswordPolicy.validateNew(password, "password");
-        return accounts.add(UserAccount.register(normalized, passwords.encode(password), clock.instant())).view();
+        String passwordHash = passwords.encode(password);
+        UserAccount account = UserAccount.register(normalized, passwordHash, clock.instant());
+        return accounts.add(account).view();
     }
 }

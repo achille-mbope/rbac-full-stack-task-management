@@ -1,22 +1,19 @@
 package net.mbope.taskmanager.user.internal.infrastructure.persistence;
 
-import net.mbope.taskmanager.user.internal.application.port.AccountStore;
-import net.mbope.taskmanager.user.internal.domain.UserAccount;
-import net.mbope.taskmanager.user.AccountPage;
-import net.mbope.taskmanager.user.AccountNotFoundException;
-
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-
+import net.mbope.taskmanager.user.AccountNotFoundException;
+import net.mbope.taskmanager.user.AccountPage;
 import net.mbope.taskmanager.user.EmailAlreadyRegisteredException;
+import net.mbope.taskmanager.user.internal.application.port.AccountStore;
+import net.mbope.taskmanager.user.internal.domain.UserAccount;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
-
-import java.util.Locale;
 
 @Repository
 class JpaAccountStore implements AccountStore {
@@ -67,7 +64,9 @@ class JpaAccountStore implements AccountStore {
     }
 
     private boolean isEmailConstraint(ConstraintViolationException failure) {
-        if (!"23505".equals(failure.getSQLState()) || failure.getConstraintName() == null) return false;
+        if (!"23505".equals(failure.getSQLState()) || failure.getConstraintName() == null) {
+            return false;
+        }
         String name = failure.getConstraintName().toLowerCase(Locale.ROOT);
         name = name.substring(name.lastIndexOf('.') + 1);
         // PostgreSQL reports the constraint; H2 reports its generated backing index.

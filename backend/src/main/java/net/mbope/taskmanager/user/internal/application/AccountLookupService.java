@@ -1,15 +1,13 @@
 package net.mbope.taskmanager.user.internal.application;
 
-import net.mbope.taskmanager.user.internal.application.port.*;
-import net.mbope.taskmanager.user.internal.domain.*;
+import java.util.Optional;
+import java.util.UUID;
 
 import net.mbope.taskmanager.user.AccountLookup;
 import net.mbope.taskmanager.user.AccountReference;
+import net.mbope.taskmanager.user.internal.application.port.AccountStore;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @Transactional(readOnly = true)

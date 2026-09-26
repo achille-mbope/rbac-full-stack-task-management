@@ -1,14 +1,21 @@
 package net.mbope.taskmanager.user.internal.infrastructure.persistence;
 
-import net.mbope.taskmanager.user.internal.domain.*;
-
-import jakarta.persistence.*;
-import net.mbope.taskmanager.user.*;
-import org.hibernate.annotations.DynamicUpdate;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
+
+import net.mbope.taskmanager.user.Role;
+import net.mbope.taskmanager.user.internal.domain.AccountRoles;
+import net.mbope.taskmanager.user.internal.domain.UserAccount;
+import org.hibernate.annotations.DynamicUpdate;
 
 @Entity
 @Table(name = "user_accounts", uniqueConstraints = @UniqueConstraint(name = "uk_user_accounts_email", columnNames = "email"))

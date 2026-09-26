@@ -1,6 +1,5 @@
 /**
- * Account ownership and credential operations. This closed module currently has no
- * application-module dependencies; add common only when a shared type is needed.
+ * Accounts, credential operations, and account HTTP adapters.
  */
-@org.springframework.modulith.ApplicationModule(allowedDependencies = {})
+@org.springframework.modulith.ApplicationModule(allowedDependencies = {"common"})
 package net.mbope.taskmanager.user;

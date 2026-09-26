@@ -1,11 +1,11 @@
 package net.mbope.taskmanager.user.internal.application.port;
 
-import net.mbope.taskmanager.user.internal.domain.UserAccount;
-import net.mbope.taskmanager.user.AccountPage;
-import net.mbope.taskmanager.user.EmailAlreadyRegisteredException;
-
 import java.util.Optional;
 import java.util.UUID;
+
+import net.mbope.taskmanager.user.AccountPage;
+import net.mbope.taskmanager.user.EmailAlreadyRegisteredException;
+import net.mbope.taskmanager.user.internal.domain.UserAccount;
 
 public interface AccountStore {
     /**

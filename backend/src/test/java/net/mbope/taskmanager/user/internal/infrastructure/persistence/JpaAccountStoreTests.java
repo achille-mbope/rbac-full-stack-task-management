@@ -1,16 +1,15 @@
 package net.mbope.taskmanager.user.internal.infrastructure.persistence;
 
-import net.mbope.taskmanager.user.internal.domain.UserAccount;
+import java.sql.SQLException;
+import java.time.Instant;
 
 import net.mbope.taskmanager.user.EmailAlreadyRegisteredException;
+import net.mbope.taskmanager.user.internal.domain.UserAccount;
 import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.dao.DataIntegrityViolationException;
-
-import java.sql.SQLException;
-import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;

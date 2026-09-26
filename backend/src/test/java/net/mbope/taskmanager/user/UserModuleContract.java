@@ -1,6 +1,19 @@
 package net.mbope.taskmanager.user;
 
-import org.junit.jupiter.api.*;
+import java.sql.Timestamp;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -10,9 +23,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-
-import java.util.*;
-import java.util.concurrent.*;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -74,7 +84,9 @@ abstract class UserModuleContract {
             var start = new CountDownLatch(1);
             Callable<Object> attempt = () -> {
                 ready.countDown();
-                if (!start.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("Start signal missing");
+                if (!start.await(10, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException("Start signal missing");
+                }
                 try {
                     return registration.register("race@example.com", PASSWORD);
                 } catch (EmailAlreadyRegisteredException conflict) {
@@ -206,7 +218,7 @@ abstract class UserModuleContract {
         assertThatThrownBy(() -> administration.list(-1, 20)).isInstanceOf(UserValidationException.class);
         assertThatThrownBy(() -> administration.list(0, 101)).isInstanceOf(UserValidationException.class);
         assertThatThrownBy(() -> administration.list(0, 0)).isInstanceOf(UserValidationException.class);
-        jdbc.update("update user_accounts set created_at = ?", java.sql.Timestamp.from(first.createdAt()));
+        jdbc.update("update user_accounts set created_at = ?", Timestamp.from(first.createdAt()));
         List<UUID> expected = jdbc.queryForList("select id from user_accounts order by id asc", UUID.class);
         assertThat(administration.list(0, 20).items()).extracting(Account::id).containsExactlyElementsOf(expected);
     }

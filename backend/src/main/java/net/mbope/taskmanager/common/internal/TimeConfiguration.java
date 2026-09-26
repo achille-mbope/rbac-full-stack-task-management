@@ -1,0 +1,14 @@
+package net.mbope.taskmanager.common.internal;
+
+import java.time.Clock;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration(proxyBeanMethods = false)
+class TimeConfiguration {
+    @Bean
+    Clock applicationClock() {
+        return Clock.systemUTC();
+    }
+}

@@ -1,9 +1,9 @@
 package net.mbope.taskmanager.user.internal.domain;
 
+import java.util.Set;
+
 import net.mbope.taskmanager.user.Role;
 import net.mbope.taskmanager.user.UserValidationException;
-
-import java.util.Set;
 
 /**
  * An account always has USER; ADMIN is an optional additional grant.

@@ -8,10 +8,10 @@ See the [changelog](CHANGELOG.md) for the latest project changes.
 ## Project Status
 
 **Backend implementation started:** the Spring Boot application and Maven Wrapper
-are present. The `user` module provides tested account services and persistence,
-including PostgreSQL migrations. See [backend setup and module API](backend/README.md).
-HTTP/auth integration, task management, the frontend, and Docker Compose are pending.
-Features below describe the full planned v1, not currently available HTTP endpoints.
+are present. The `user` and `auth` modules provide account REST endpoints, persistence,
+and JWT authentication. See [backend setup and module API](backend/README.md).
+Task management, the frontend, runtime OpenAPI/Swagger UI, and Docker Compose are pending.
+The scope below describes the full planned v1.
 
 ## Planned Scope
 
@@ -40,8 +40,9 @@ v1 scope. Draft task fields and status transitions are defined in the
 | Change own password | Allowed | Allowed |
 | List accounts, assign roles, enable/disable accounts | Denied | Allowed |
 
-Registration always assigns `USER`. Backend services enforce permissions and
-task assignment boundaries; frontend guards only control navigation. See
+Registration always assigns `USER`. Account permissions are enforced by backend
+services and HTTP security. Task assignment enforcement and frontend guards remain
+part of the planned task and Angular implementations. See
 [ADR-0006](docs/adr/0006-security.md) for the authorization policy.
 
 ## Planned Technology Baseline
@@ -67,12 +68,12 @@ to be pinned. Version selection and maintenance requirements are defined in
 
 ## Architecture
 
-The monorepo will contain a single Spring Boot backend deployable and a separate
-Angular SPA communicating over REST.
+The monorepo contains a single Spring Boot backend deployable. A separate Angular
+SPA communicating over REST is planned.
 
 | Location | Purpose | Current state |
 | --- | --- | --- |
-| `backend/` | Spring Boot modular monolith | User services and persistence implemented |
+| `backend/` | Spring Boot modular monolith | Account HTTP API, JWT security, and persistence implemented |
 | `frontend/` | Angular SPA | Not scaffolded |
 | `docs/adr/` | Accepted architecture decisions | Available |
 | `docker-compose.yml` | Local PostgreSQL infrastructure | Planned |
@@ -86,14 +87,18 @@ Angular SPA communicating over REST.
 | `task` | Task lifecycle, assignment, and access enforcement | `user`, `common` |
 | `common` | Small domain-neutral shared types and utilities | None |
 
-All modules are closed. Public service contracts and DTOs belong in module root
-packages; implementations, entities, and repositories remain internal. Tasks
-store stable assignee and creator IDs without cross-module JPA associations.
-Assignment validates recipients through the public `user` API synchronously.
+The `auth`, `user`, and `common` modules are implemented and closed; `task` remains
+planned. Public module contracts and DTOs live in module root packages. Internal
+code separates application use cases, infrastructure, presentation, and domain
+rules where applicable. HTTP request DTOs remain internal to presentation packages.
+The planned task module will store stable account IDs without cross-module JPA
+associations and validate recipients through the public `user` API.
 
-Spring Modulith verification tests will check module cycles, internal-package
+Spring Modulith verification tests check module cycles, internal-package
 access, and explicit dependency allowlists during Maven verification. Skipping
-tests skips those checks. See [ADR-0007](docs/adr/0007-modulith.md).
+tests skips those checks. `LayerArchitectureTests` also enforce domain, application,
+and presentation dependency boundaries across modules. See
+[ADR-0007](docs/adr/0007-modulith.md).
 
 Synchronous APIs support interactions requiring an immediate answer, such as
 credential verification. Events are optional for independent reactions, with
@@ -106,8 +111,8 @@ and central authentication, guards, and HTTP interceptors.
 
 - **Quick development:** disposable H2 with Hibernate schema creation/drop and
   Flyway disabled.
-- **PostgreSQL development:** PostgreSQL 16 through local Docker Compose, Flyway
-  migrations, and Hibernate schema validation.
+- **PostgreSQL development:** an externally supplied PostgreSQL 16 instance, Flyway
+  migrations, and Hibernate schema validation. Local Docker Compose is planned.
 - **Production:** PostgreSQL with migrations and validation; local Compose does
   not constitute a production deployment plan.
 - **Integration tests:** PostgreSQL Testcontainers running the same migrations.
@@ -121,15 +126,24 @@ The draft [OpenAPI 3.1 contract](docs/api/openapi.json) defines endpoints, reque
 and response schemas, validation, and errors. See the [contract guide](docs/api/README.md)
 for task lifecycle rules and design choices pending implementation.
 
-The planned API uses REST and JSON under `/api/v1`, with RFC 9457 Problem
+The implemented account API uses REST and JSON under `/api/v1`, with RFC 9457 Problem
 Details errors (`application/problem+json`). OpenAPI will document operations,
 schemas, and bearer authentication. Swagger UI is planned at
 `/swagger-ui.html` in development.
 
+HTTP security is configured by
+[`HttpSecurityConfiguration`](backend/src/main/java/net/mbope/taskmanager/auth/internal/infrastructure/HttpSecurityConfiguration.java)
+for servlet web applications. Registration and login are public; `/api/v1/admin/**`
+requires ADMIN, and all other routes require authentication. JWT `roles` map to
+Spring Security authorities with the `ROLE_` prefix. The filter chain is stateless,
+with request caching, CSRF, form login, HTTP Basic, and server-side logout disabled.
+See the [backend security guide](backend/README.md#security-and-http-code-ownership)
+for CORS handling and internal error dispatches.
+
 Requests authenticate through `Authorization: Bearer <token>`. The v1
 authentication tradeoffs are explicit:
 
-- Access tokens expire after 15 minutes and are kept only in frontend memory.
+- Access tokens expire after 15 minutes. The planned frontend must keep them only in memory.
 - Reloading the page or reaching token expiry requires login again; there are
   no refresh tokens.
 - Logout clears the local token but does not revoke a copied token.
@@ -142,9 +156,10 @@ Signing keys and database credentials come from environment variables. Deployed
 environments require HTTPS. Login and registration rate limiting is outside v1
 and must be addressed before public deployment.
 
-The first administrator will be provisioned through a controlled operator
-procedure, with no default credentials. That procedure has not yet been
-implemented; reproducible bootstrap instructions are a delivery requirement.
+The first administrator is provisioned through the controlled operator procedure in
+[the backend guide](backend/README.md#administrator-provisioning-and-recovery):
+register through HTTP, promote the account using authorized SQL access, then log in.
+No default credentials are shipped.
 
 See [authentication](docs/adr/0003-authentication.md),
 [API design](docs/adr/0004-api-design.md), and
@@ -152,24 +167,77 @@ See [authentication](docs/adr/0003-authentication.md),
 
 ## Getting Started
 
-The backend can start with disposable H2 and can run its account-service tests.
-Follow the [backend guide](backend/README.md); HTTP endpoints and the frontend are pending.
+Install JDK 21 or newer and make it available through `JAVA_HOME` or `PATH`.
+Use the committed Maven Wrapper; a separate Maven installation is not required.
+The first run needs network access to download Maven and project dependencies.
 
-Backend development requires Java 21+ and a Docker-compatible container runtime
-for PostgreSQL integration tests. Use the committed Maven Wrapper. Node.js/npm
-and a frontend lockfile will be needed when frontend implementation begins.
+### Start the backend locally
 
-The planned verification commands are:
+From the repository root in Windows PowerShell:
 
-| Directory | Command | Purpose |
-| --- | --- | --- |
-| `backend/` | `./mvnw verify` (Unix) or `.\mvnw.cmd verify` (Windows) | Backend, module, and PostgreSQL checks |
-| `frontend/` | `npm ci` | Install locked dependencies |
-| `frontend/` | `npm run build` | Build the frontend |
+```powershell
+cd backend
+.\setup-local.ps1
+.\mvnw.cmd spring-boot:run
+```
 
-The backend verification command is available now. Frontend commands remain planned.
-The backend guide describes startup, environment variables, module contracts, and
-the operator promotion/recovery procedure; initial HTTP registration awaits auth.
+Run the setup script once per checkout. It creates a signing key in
+`backend/.local/application.properties`, which Git ignores, and preserves an
+existing file. On subsequent starts, run only `.\mvnw.cmd spring-boot:run` from
+`backend/`. An environment `JWT_SECRET` overrides the local key.
+
+The default `h2` profile starts the API at `http://localhost:8080` without Docker
+or a separate database. H2 data is lost when the application stops. Press `Ctrl+C`
+to stop it. The frontend and Swagger UI are not implemented yet; an unauthenticated
+request to `/` returns 401 because that route is protected.
+
+On Unix, run `pwsh ./setup-local.ps1` if PowerShell is installed, then
+`./mvnw spring-boot:run`, both from `backend/`. Alternatively, supply an external
+`JWT_SECRET` as described in the
+[authentication configuration guide](backend/README.md#authentication-configuration).
+PostgreSQL startup requires an external signing key and database configuration;
+see the [backend guide](backend/README.md#run-and-verify).
+
+### Test registration and login with Postman
+
+With the backend running, follow the
+[Postman walkthrough](backend/README.md#test-registration-and-login-with-postman)
+to register an account, log in, and send a bearer token. It includes JSON request
+bodies, expected status codes, and checks for invalid credentials and permissions.
+The default H2 database loses accounts when the backend stops.
+
+### Test the backend
+
+Run these commands from `backend/`. Tests start their own application contexts
+and supply a test signing key, so a running backend and local key setup are not required.
+
+For the full test suite and a clean package build, start a Docker-compatible
+container runtime first, then run:
+
+```powershell
+.\mvnw.cmd clean verify
+```
+
+This includes unit, HTTP/JWT, architecture, Spring Modulith, and PostgreSQL
+Testcontainers checks. Testcontainers starts its own PostgreSQL database;
+Docker-dependent tests fail if Docker is unavailable.
+
+To run the tests that do not require Docker and build the package:
+
+```powershell
+.\mvnw.cmd "-Dtest=*,!UserModuleTests,!TaskManagerApplicationTests" clean verify
+```
+
+This excludes the two PostgreSQL-dependent test classes and does not verify
+PostgreSQL migrations or persistence. Run the full suite with Docker before
+treating those behaviors as verified.
+
+On Unix, use `./mvnw` instead of `.\mvnw.cmd`, keeping the test selector quoted.
+Test reports are written to `backend/target/surefire-reports/`.
+
+See the [backend guide](backend/README.md) for account endpoints, module contracts,
+and administrator provisioning. The frontend remains pending; Node.js/npm and
+frontend install/build commands will be needed once it is scaffolded.
 
 ## Architecture Decision Records
 
@@ -185,19 +253,23 @@ the operator promotion/recovery procedure; initial HTTP registration awaits auth
 
 - [ ] Backend and frontend scaffolded with pinned tools and dependencies.
 - [x] Task fields, validation, and lifecycle specified in the draft API contract.
-- [ ] Registration, login, expiry, logout, and password changes work end to end.
+- [x] Account registration, login, token rejection, and password changes verified through HTTP tests.
+- [ ] Frontend authentication, expiry handling, and client-side logout work end to end.
 - [ ] User isolation, admin access to all tasks, and role-escalation attempts covered by tests.
 - [ ] Self-assignment and admin assignment to users/admins verified.
 - [ ] Administrative task edits and deletions recorded in transactional audit records.
-- [ ] Account administration and documented administrator bootstrap work.
-- [ ] Disabled-account login and the accepted stale-token behavior verified.
+- [x] Account administration and documented administrator bootstrap work through HTTP (H2 verified).
+- [x] Disabled-account login and the accepted stale-token behavior verified.
 - [x] Module verification passes as part of Maven verification.
-- [x] Initial user migration and account persistence pass PostgreSQL integration tests.
+- [ ] Verify the current revision against PostgreSQL; tests exist, but the latest run was blocked by unavailable Docker.
 - [ ] Validation, 401, 403, and ownership-related 404 errors follow the API contract.
 - [ ] Frontend login, task list, forms, and filters work with the backend.
 - [ ] Local Compose starts PostgreSQL; application startup is documented separately.
 - [ ] Development API documentation is available; production access is restricted.
 - [ ] Setup and verification instructions are reproducible from a fresh checkout.
+
+Latest local verification: a clean package build and 92 Docker-free tests passed.
+This does not replace PostgreSQL migration and persistence verification.
 
 CI configuration is outside v1 scope. Local verification is required; future CI
 must run the same checks.
