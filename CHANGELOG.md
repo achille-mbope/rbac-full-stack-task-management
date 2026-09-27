@@ -6,6 +6,26 @@ and the frontend remain planned.
 
 ## Unreleased
 
+### Task application business logic
+
+- Added personal and administrative task use-case contracts, immutable read models,
+  creation/update inputs, and task-owned storage, current-principal, and audit ports.
+- Implemented self-assignment, assignee-scoped personal access (including ADMIN),
+  admin checks before lookup, and enabled-recipient validation through `AccountLookup`.
+- Implemented partial-update field presence, empty-update rejection, pagination and
+  title-filter validation, and synchronous admin edit/delete audit requests.
+- Added in-memory application tests for access isolation, assignment, updates,
+  scoped queries, and audit details/failure propagation. Services declare transaction
+  boundaries; adapter wiring and database rollback verification remain pending.
+- All 32 focused application, domain, and architecture tests passed via Surefire.
+  Compilation produced current classes but reported the existing dependency-cache
+  JAR-close access errors; a normal clean build remains unverified.
+- Updated implementation documentation: persistence, principal/audit adapters, and
+  transactional bean wiring are next, followed by HTTP adapters.
+- Aligned the README delivery checklist, API implementation notes, OpenAPI status
+  description, and API/security/module ADRs with completed task application logic
+  and the remaining runtime and integration work.
+
 ### Task domain and implementation sequence
 
 - Added the closed `task` module with a framework-independent `Task` domain model,

@@ -10,7 +10,7 @@ See the [changelog](CHANGELOG.md) for the latest project changes.
 **Backend implementation started:** the Spring Boot application and Maven Wrapper
 are present. The `user` and `auth` modules provide account REST endpoints, persistence,
 and JWT authentication. See [backend setup and module API](backend/README.md).
-The task domain is implemented; task application services, persistence and endpoints, the frontend,
+The task domain and application use cases are implemented; task adapters and endpoints, the frontend,
 runtime OpenAPI/Swagger UI, and Docker Compose are pending.
 The scope below describes the full planned v1.
 
@@ -42,8 +42,9 @@ v1 scope. Draft task fields and status transitions are defined in the
 | List accounts, assign roles, enable/disable accounts | Denied | Allowed |
 
 Registration always assigns `USER`. Account permissions are enforced by backend
-services and HTTP security. Task assignment enforcement and frontend guards remain
-part of the planned task and Angular implementations. See
+services and HTTP security. Task application services enforce assignment and access
+rules in unit tests; persistence/principal adapters and runtime wiring remain pending.
+Frontend guards remain planned. See
 [ADR-0006](docs/adr/0006-security.md) for the authorization policy.
 
 ## Planned Technology Baseline
@@ -74,7 +75,7 @@ SPA communicating over REST is planned.
 
 | Location | Purpose | Current state |
 | --- | --- | --- |
-| `backend/` | Spring Boot modular monolith | Account HTTP API, JWT security, account persistence, and task domain implemented |
+| `backend/` | Spring Boot modular monolith | Account HTTP API, JWT security, account persistence, and task domain/use cases implemented |
 | `frontend/` | Angular SPA | Not scaffolded |
 | `docs/adr/` | Accepted architecture decisions | Available |
 | `docker-compose.yml` | Local PostgreSQL infrastructure | Planned |
@@ -89,22 +90,22 @@ SPA communicating over REST is planned.
 | `common` | Small domain-neutral shared types and utilities | None |
 
 The `auth`, `user`, and `common` modules are implemented and closed; `task` is a
-closed module with its domain implemented. Public module contracts and DTOs live in
+closed module with domain and application logic implemented. Public module contracts and DTOs live in
 module root packages. Internal
 code separates application use cases, infrastructure, presentation, and domain
 rules where applicable. HTTP request DTOs remain internal to presentation packages.
-The task domain stores immutable assignee and creator IDs. Upcoming application
-services will validate recipients through the public `user` API; persistence will
+The task domain stores immutable assignee and creator IDs. Application
+services validate recipients through the public `user` API; persistence will
 use stable account IDs without cross-module JPA associations.
 
 ### Task implementation sequence
 
 1. **Completed: domain.** Task fields, Unicode character limits, immutable attribution,
    optional due dates, and all TODO/IN_PROGRESS/DONE transitions are implemented.
-2. **Next: application business logic.** Define storage, current-user, and audit ports;
-   implement task use cases, assignment validation, and personal/admin access rules.
-   Test these rules with in-memory fakes.
-3. **Persistence and adapters.** Implement JPA storage, migrations, principal lookup,
+2. **Completed: application business logic.** Task use cases enforce assignment validation
+   and personal/admin access rules through storage, current-user, and audit ports.
+   Tests exercise these rules with in-memory fakes.
+3. **Next: persistence and adapters.** Implement JPA storage, migrations, principal lookup,
    and transactional administrative audit storage; verify database behavior.
 4. **HTTP API.** Add controllers, partial-update handling, error mapping, and contract tests.
 
@@ -141,7 +142,7 @@ PostgreSQL integration tests. See [ADR-0002](docs/adr/0002-database.md).
 
 The draft [OpenAPI 3.1 contract](docs/api/openapi.json) defines endpoints, request
 and response schemas, validation, and errors. See the [contract guide](docs/api/README.md)
-for task lifecycle rules and design choices pending implementation.
+for task lifecycle rules, implemented application behavior, and remaining HTTP requirements.
 
 The implemented account API uses REST and JSON under `/api/v1`, with RFC 9457 Problem
 Details errors (`application/problem+json`). OpenAPI will document operations,
@@ -271,15 +272,15 @@ frontend install/build commands will be needed once it is scaffolded.
 - [ ] Backend and frontend scaffolded with pinned tools and dependencies.
 - [x] Task fields, validation, and lifecycle specified in the draft API contract.
 - [x] Task domain implemented and verified with domain and architecture tests.
-- [ ] Task application use cases and authorization verified independently of persistence.
+- [x] Task application use cases and authorization verified independently of persistence.
 - [x] Account registration, login, token rejection, and password changes verified through HTTP tests.
 - [ ] Frontend authentication, expiry handling, and client-side logout work end to end.
-- [ ] User isolation, admin access to all tasks, and role-escalation attempts covered by tests.
-- [ ] Self-assignment and admin assignment to users/admins verified.
+- [x] Task application tests cover user isolation, admin access, and assignment validation.
+- [ ] Task isolation, self-assignment, and admin assignment verified through HTTP and persistence.
 - [ ] Administrative task edits and deletions recorded in transactional audit records.
 - [x] Account administration and documented administrator bootstrap work through HTTP (H2 verified).
 - [x] Disabled-account login and the accepted stale-token behavior verified.
-- [x] Module verification passes as part of Maven verification.
+- [x] Module verification is included in Maven tests and passes in the focused run.
 - [ ] Verify the current revision against PostgreSQL; tests exist, but the latest run was blocked by unavailable Docker.
 - [ ] Validation, 401, 403, and ownership-related 404 errors follow the API contract.
 - [ ] Frontend login, task list, forms, and filters work with the backend.
@@ -287,7 +288,7 @@ frontend install/build commands will be needed once it is scaffolded.
 - [ ] Development API documentation is available; production access is restricted.
 - [ ] Setup and verification instructions are reproducible from a fresh checkout.
 
-Latest focused verification: 11 task domain tests and 4 architecture/module tests
+Latest focused verification: 17 task application tests, 11 domain tests, and 4 architecture/module tests
 passed through Maven Surefire on 2026-09-27. The normal build encountered local
 wrapper and dependency-cache access errors; compiled tests were run directly.
 The earlier clean package build passed 92 Docker-free tests before the task domain

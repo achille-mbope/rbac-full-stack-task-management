@@ -3,8 +3,9 @@
 [openapi.json](openapi.json) is the OpenAPI 3.1 contract for the planned v1 API.
 Its version is `0.1.0-draft`. Account registration, login, password changes, and
 administrator account operations are implemented in the backend. The task domain
-implements field validation, immutable attribution, and status changes. Task application
-use cases, persistence, and HTTP operations remain planned; runtime-generated OpenAPI
+implements field validation, immutable attribution, and status changes. Application
+use cases implement assignment, access rules, and partial updates through ports.
+Task persistence and HTTP operations remain planned; runtime-generated OpenAPI
 and Swagger UI are not yet available.
 Import it into an OpenAPI 3.1-compatible viewer or client generator.
 
@@ -155,10 +156,17 @@ identity/attribution, restoration, and rejected updates leaving state unchanged.
 Layer and Modulith checks also pass. This verifies domain behavior only; the task
 routes above are still unavailable.
 
-Next, implement application use cases and task-owned ports with in-memory tests for
-assignment, access rules, and audit requests. Persistence adapters and transactional
-integration tests follow, then HTTP adapters and contract verification. See the
+Application use cases now have 17 passing in-memory tests for assignment, personal/admin access,
+partial updates, list scoping/filter forwarding, and audit requests/failure propagation.
+Persistence adapters and transactional integration tests are next, followed by HTTP
+adapters and contract verification. These tests do not establish database filtering,
+transactional rollback, or HTTP behavior. See the
 [backend implementation sequence](../../backend/README.md#task-domain-and-next-steps).
+
+The latest focused run passed 32 tests: 17 application, 11 domain, and 4 architecture/module
+checks. Compiled tests ran through Surefire after dependency-cache access errors;
+this does not establish a clean build or full-suite success. See the
+[verification notes](../../backend/README.md#run-and-verify).
 
 Before implementation is considered complete, verify schema conformance, pagination
 and filtering, every status transition, nullable patch fields, unknown-field rejection,

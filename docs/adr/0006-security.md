@@ -2,7 +2,7 @@
 
 **Status:** Accepted  
 **Date:** 2026-09-15  
-**Updated:** 2026-09-23
+**Updated:** 2026-09-27
 
 ## Context
 
@@ -75,6 +75,16 @@ the earlier owner-only and creating-admin-only access rules.
 - **Secrets:** environment variables, with no committed defaults.
 - **Logging:** never log passwords, JWTs, Authorization headers, or full auth
   request bodies. Login failures must not disclose whether an account exists or is disabled.
+
+## Implementation status (2026-09-27)
+
+Account HTTP authorization and JWT handling are implemented. Task application tests
+cover self-assignment, assignee-scoped access for USER and ADMIN, admin checks before
+lookup, enabled-recipient validation, and administrative audit requests. Principal
+and persistence adapters, transactional audit storage, and task HTTP endpoints remain
+pending. Audit failure propagation is tested; actual database rollback and audit
+survival require integration tests once those adapters exist. See the
+[backend guide](../../backend/README.md#task-domain-and-next-steps).
 
 ## Rationale
 

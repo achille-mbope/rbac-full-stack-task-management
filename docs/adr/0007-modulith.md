@@ -2,7 +2,7 @@
 
 **Status:** Accepted  
 **Date:** 2026-09-15  
-**Updated:** 2026-09-23
+**Updated:** 2026-09-27
 
 ## Context
 
@@ -30,8 +30,9 @@ has a `package-info.java` with `@ApplicationModule` and explicit
 - For admin task assignment, the `user` API also exposes a synchronous account
   lookup returning the stable account ID and enabled status. The `task` module
   uses this public contract to validate recipients; it does not access user repositories.
-- Business services obtain the authenticated principal through Spring Security,
-  without depending on `auth` internals. Tasks store stable assignee and creator IDs
+- Business services obtain the authenticated principal through module-owned ports
+  backed by Spring Security adapters, without depending on `auth` internals or
+  Spring Security in the application layer. Tasks store stable assignee and creator IDs
   without cross-module JPA associations. Assignment is synchronous; events remain deferred.
 - The `task` module enforces assignee-scoped personal operations and ADMIN-only
   global operations. Creator IDs are attribution, not access grants. It also owns
@@ -62,6 +63,16 @@ does not require asynchronous communication solely to demonstrate modularity.
 Before introducing asynchronous events, define transaction boundaries, delivery
 and retry behavior, idempotency, and acceptable eventual consistency. An async
 listener alone is not a durable delivery guarantee.
+
+## Implementation status (2026-09-27)
+
+All four closed modules are present. The task domain and application use cases are
+implemented, with public contracts and DTOs in `task` and storage, principal, and
+audit ports under `task.internal.application.port`. Recipient lookup uses public
+`AccountLookup`; no user internals are accessed. Task services declare transactional
+boundaries but await adapter implementations and transactional bean registration.
+Layer and Modulith checks pass in the focused test run. Database integration and
+runtime task wiring remain pending; see the [backend guide](../../backend/README.md#task-domain-and-next-steps).
 
 ## Rationale
 

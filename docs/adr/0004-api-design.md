@@ -2,7 +2,7 @@
 
 **Status:** Accepted  
 **Date:** 2026-09-15  
-**Updated:** 2026-09-23
+**Updated:** 2026-09-27
 
 ## Context
 
@@ -34,6 +34,15 @@ The frontend needs predictable resource operations and a consistent error contra
   like a nonexistent task, as required by [ADR-0006](0006-security.md).
 - Document success/error schemas and bearer authentication using OpenAPI 3.1
   with a Spring Boot-compatible springdoc-openapi release and Swagger UI.
+
+## Implementation status (2026-09-27)
+
+Account endpoints and Problem Details handling are implemented. Task domain and
+application contracts support CRUD, assignment/access rules, field-presence-aware
+updates, and query validation. Task HTTP endpoints and exception-to-response mapping
+are not implemented yet; the OpenAPI document describes their intended contract.
+Runtime OpenAPI/Swagger UI also remains pending. See the
+[API implementation notes](../api/README.md#implementation-verification).
 
 ## Rationale
 

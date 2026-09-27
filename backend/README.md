@@ -11,8 +11,10 @@ The `task` module now contains its framework-independent domain: immutable assig
 and creator IDs, title/description validation by Unicode code points, optional due
 dates, and TODO/IN_PROGRESS/DONE status changes (including reopening). New tasks
 default to TODO; all editable fields are validated before an update changes state.
-Task application services and authorization are next, followed by persistence and
-HTTP adapters. The Angular UI and runtime OpenAPI/Swagger UI remain pending.
+Task application services now implement personal and administrative use cases,
+assignment validation, and authorization through ports. Persistence, principal/audit
+adapters, Spring bean wiring, and HTTP adapters remain pending. The Angular UI and
+runtime OpenAPI/Swagger UI remain pending.
 
 ## HTTP endpoints
 
@@ -283,22 +285,31 @@ persistence-assigned ID convention. Restoration requires an ID. Creation timesta
 are immutable, update timestamps are supplied by the caller, and both use microsecond
 precision. Updates validate all values before changing any state.
 
-Application business logic is the next implementation step:
+Application contracts `PersonalTasks` and `TaskAdministration` expose create, get,
+list, update, and delete use cases. `PersonalTaskService` derives self-assignment and
+creator IDs from `CurrentTaskActor` and uses assignee-scoped storage even for ADMIN.
+Missing and inaccessible tasks raise the same `TaskNotFoundException`.
+`TaskAdministrationService` checks ADMIN before validation or lookup, validates new
+recipients through public `AccountLookup`, and can manage existing tasks without
+rechecking recipient status. Creator attribution alone grants no access.
 
-1. Define public use-case contracts and task-owned storage, current-user, and audit ports.
-2. Implement create, get, list, update, and delete use cases. Personal operations must
-   be assignee-scoped even for ADMIN; administrative operations require ADMIN before lookup.
-3. Derive creator/self-assignment IDs from the current principal and validate admin-selected
-   recipients through `AccountLookup`. Creator attribution alone grants no access.
-4. Test authorization, assignment, filtering, partial updates, and audit requests with
-   in-memory fakes before adding database adapters.
-5. Implement JPA/Flyway persistence and principal/audit adapters, then HTTP controllers
-   and contract tests. Administrative edits/deletions must persist audit records in
-   the same transaction as the mutation; verify that guarantee with integration tests.
+Immutable `TaskDetails`/`TaskPage` records form the read API. `TaskDraft` contains only
+editable creation values. `TaskUpdate` uses `FieldChange` to distinguish omission from
+explicit null, rejects empty updates in the use case, and preserves immutable attribution.
+`TaskQuery` validates pagination and trims the literal title filter. `TaskStore` must
+apply scope and all filters before counting/pagination, with the contract's stable ordering.
 
-The domain update method accepts the complete editable state. Upcoming application
-and HTTP handling must distinguish omitted PATCH fields from explicit nulls and
-reject empty patches. Domain tests do not establish HTTP or authorization behavior.
+Task-owned ports are `TaskStore`, `CurrentTaskActor`, and `TaskAudit`. Admin updates
+and deletions append immutable audit entries with actor/task IDs, UTC time, action,
+and field changes; failures propagate. Transaction annotations declare the intended
+boundary. Services are not component-scanned yet: register them as transactional beans
+when the adapters exist. In-memory tests verify orchestration, not database rollback.
+
+Next, implement JPA/Flyway persistence, the principal adapter, and audit storage,
+then wire the services. Administrative mutations and audit writes must share a
+transaction; integration tests must prove rollback and audit survival after deletion.
+Add HTTP controllers, JSON field-presence handling, error mapping, and contract tests
+afterward. Task routes remain unavailable until those adapters are implemented.
 
 ## Run and verify
 
@@ -325,19 +336,19 @@ Testcontainers. Run the full `verify` command with Docker available before treat
 PostgreSQL behavior as verified for the current revision. Tests supply their own
 signing-key fixture; application startup requires either the H2 local setup or an external `JWT_SECRET`.
 
-For focused task domain and architecture verification:
+For focused task application, domain, and architecture verification:
 
 ```powershell
-.\mvnw.cmd "-Dtest=TaskTests,LayerArchitectureTests,ModularityTests" test
+.\mvnw.cmd "-Dtest=TaskServiceTests,TaskTests,LayerArchitectureTests,ModularityTests" test
 ```
 
-On 2026-09-27, all 15 focused tests passed (11 domain, 3 layer architecture, and
-1 Modulith verification). The wrapper failed to start in the agent environment;
+On 2026-09-27, all 32 focused tests passed (17 application, 11 domain, 3 layer
+architecture, and 1 Modulith verification). The wrapper failed to start in the agent environment;
 cached Maven 3.9.16 compiled the classes but encountered dependency-cache access
 errors while closing JARs. Running the compiled tests directly with `surefire:test`
 succeeded. This focused result is not a clean build or full-suite verification.
 
-The tests were introduced before their implementations. The development-profile
+The account tests were introduced before their implementations. The development-profile
 duplicate-email test also reproduced an H2/PostgreSQL constraint-name difference
 before the exception translation was corrected.
 
