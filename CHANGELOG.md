@@ -6,6 +6,22 @@ and the frontend remain planned.
 
 ## Unreleased
 
+### Task domain and implementation sequence
+
+- Added the closed `task` module with a framework-independent `Task` domain model,
+  public `TaskStatus`, and safe `TaskValidationException` details.
+- Implemented immutable assignee/creator attribution, Unicode title and description
+  limits, optional calendar due dates, creation defaults, restoration, and atomic
+  updates. All status transitions, including reopening DONE, are allowed.
+- Added 11 domain tests and task-module discovery verification. All 15 focused
+  domain, layer, and Modulith tests passed through Maven Surefire on 2026-09-27.
+  Wrapper startup and dependency-cache access errors prevented a normal clean-build
+  verification; the focused run used compiled classes and cached Maven 3.9.16.
+- Updated the README, backend guide, and API guide with implemented scope and the
+  next step: application business logic and ports tested with in-memory fakes,
+  followed by persistence adapters and the HTTP API. Task authorization, assignment
+  lookup, and transactional administrative audit storage remain pending.
+
 ### Postman authentication walkthrough
 
 - Added backend startup, registration and login requests, bearer-token handling,

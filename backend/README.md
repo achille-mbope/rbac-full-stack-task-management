@@ -7,7 +7,12 @@ The backend uses Java 21, Spring Boot 3.5.16, Spring Modulith 1.4.13, and the co
 The `user` module implements account services, persistence, and account HTTP adapters.
 The `auth` module implements login, JWT issuance/validation, and stateless HTTP security.
 The `common` module provides consistent Problem Details responses and a shared clock.
-Task endpoints, the Angular UI, and runtime OpenAPI/Swagger UI remain pending.
+The `task` module now contains its framework-independent domain: immutable assignee
+and creator IDs, title/description validation by Unicode code points, optional due
+dates, and TODO/IN_PROGRESS/DONE status changes (including reopening). New tasks
+default to TODO; all editable fields are validated before an update changes state.
+Task application services and authorization are next, followed by persistence and
+HTTP adapters. The Angular UI and runtime OpenAPI/Swagger UI remain pending.
 
 ## HTTP endpoints
 
@@ -254,6 +259,47 @@ The auth module consumes public user contracts and common HTTP error support.
 Constructor injection, focused interfaces, and separate registration, credential, lookup, and administration services keep these
 responsibilities independent.
 
+## Task domain and next steps
+
+The closed `task` module allows dependencies on public `user` and `common` APIs.
+Its current implementation consists of:
+
+| Type | Responsibility |
+| --- | --- |
+| `task.internal.domain.Task` | Task state, creation/restoration, and atomic updates |
+| `task.TaskStatus` | TODO, IN_PROGRESS, and DONE |
+| `task.TaskValidationException` | Safe field/code/message validation details |
+
+The domain has no Spring, JPA, or HTTP dependencies. Titles must contain a
+non-whitespace character and at most 200 Unicode code points; optional descriptions
+allow up to 10,000 code points. Supplied text is preserved. Description and due date
+may be cleared with null. Past due dates are valid and do not change status.
+Every status transition is allowed, including reopening DONE and retaining a status.
+
+The minimal creation factory defaults to TODO with null description and due date;
+the full factory accepts explicit editable values. Assignee and creator IDs are
+required and immutable. Unsaved tasks have no ID, following the account domain's
+persistence-assigned ID convention. Restoration requires an ID. Creation timestamps
+are immutable, update timestamps are supplied by the caller, and both use microsecond
+precision. Updates validate all values before changing any state.
+
+Application business logic is the next implementation step:
+
+1. Define public use-case contracts and task-owned storage, current-user, and audit ports.
+2. Implement create, get, list, update, and delete use cases. Personal operations must
+   be assignee-scoped even for ADMIN; administrative operations require ADMIN before lookup.
+3. Derive creator/self-assignment IDs from the current principal and validate admin-selected
+   recipients through `AccountLookup`. Creator attribution alone grants no access.
+4. Test authorization, assignment, filtering, partial updates, and audit requests with
+   in-memory fakes before adding database adapters.
+5. Implement JPA/Flyway persistence and principal/audit adapters, then HTTP controllers
+   and contract tests. Administrative edits/deletions must persist audit records in
+   the same transaction as the mutation; verify that guarantee with integration tests.
+
+The domain update method accepts the complete editable state. Upcoming application
+and HTTP handling must distinguish omitted PATCH fields from explicit nulls and
+reject empty patches. Domain tests do not establish HTTP or authorization behavior.
+
 ## Run and verify
 
 From `backend/`, with Java 21+ and Docker running:
@@ -274,10 +320,22 @@ For a clean package build with all tests that do not require Docker:
 .\mvnw.cmd "-Dtest=*,!UserModuleTests,!TaskManagerApplicationTests" clean verify
 ```
 
-The latest clean run passed 92 tests. The two excluded classes require PostgreSQL
+The earlier clean run, before adding the task domain, passed 92 tests. The two excluded classes require PostgreSQL
 Testcontainers. Run the full `verify` command with Docker available before treating
 PostgreSQL behavior as verified for the current revision. Tests supply their own
 signing-key fixture; application startup requires either the H2 local setup or an external `JWT_SECRET`.
+
+For focused task domain and architecture verification:
+
+```powershell
+.\mvnw.cmd "-Dtest=TaskTests,LayerArchitectureTests,ModularityTests" test
+```
+
+On 2026-09-27, all 15 focused tests passed (11 domain, 3 layer architecture, and
+1 Modulith verification). The wrapper failed to start in the agent environment;
+cached Maven 3.9.16 compiled the classes but encountered dependency-cache access
+errors while closing JARs. Running the compiled tests directly with `surefire:test`
+succeeded. This focused result is not a clean build or full-suite verification.
 
 The tests were introduced before their implementations. The development-profile
 duplicate-email test also reproduced an H2/PostgreSQL constraint-name difference

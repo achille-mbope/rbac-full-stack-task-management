@@ -2,8 +2,10 @@
 
 [openapi.json](openapi.json) is the OpenAPI 3.1 contract for the planned v1 API.
 Its version is `0.1.0-draft`. Account registration, login, password changes, and
-administrator account operations are implemented in the backend. Task operations
-remain planned; runtime-generated OpenAPI and Swagger UI are not yet available.
+administrator account operations are implemented in the backend. The task domain
+implements field validation, immutable attribution, and status changes. Task application
+use cases, persistence, and HTTP operations remain planned; runtime-generated OpenAPI
+and Swagger UI are not yet available.
 Import it into an OpenAPI 3.1-compatible viewer or client generator.
 
 For manual testing of the implemented authentication endpoints, follow the
@@ -146,6 +148,17 @@ routes return a Problem Details 404. Never disclose stack traces, SQL, secrets,
 or internal exception messages.
 
 ## Implementation verification
+
+The task domain has 11 passing tests covering creation defaults, Unicode length
+limits, required fields, all status transitions, optional-field clearing, immutable
+identity/attribution, restoration, and rejected updates leaving state unchanged.
+Layer and Modulith checks also pass. This verifies domain behavior only; the task
+routes above are still unavailable.
+
+Next, implement application use cases and task-owned ports with in-memory tests for
+assignment, access rules, and audit requests. Persistence adapters and transactional
+integration tests follow, then HTTP adapters and contract verification. See the
+[backend implementation sequence](../../backend/README.md#task-domain-and-next-steps).
 
 Before implementation is considered complete, verify schema conformance, pagination
 and filtering, every status transition, nullable patch fields, unknown-field rejection,

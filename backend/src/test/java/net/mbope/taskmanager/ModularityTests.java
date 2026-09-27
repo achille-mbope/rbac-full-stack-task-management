@@ -11,6 +11,7 @@ class ModularityTests {
     void verifiesClosedModuleBoundariesAndGeneratesDocumentation() {
         ApplicationModules modules = ApplicationModules.of(TaskManagerApplication.class);
         assertThat(modules.getModuleByName("user")).isPresent();
+        assertThat(modules.getModuleByName("task")).isPresent();
         modules.verify();
         new Documenter(modules).writeDocumentation();
     }
