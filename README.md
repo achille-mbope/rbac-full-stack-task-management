@@ -10,8 +10,8 @@ See the [changelog](CHANGELOG.md) for the latest project changes.
 **Backend implementation started:** the Spring Boot application and Maven Wrapper
 are present. The `user` and `auth` modules provide account REST endpoints, persistence,
 and JWT authentication. See [backend setup and module API](backend/README.md).
-The task domain and application use cases are implemented; task adapters and endpoints, the frontend,
-runtime OpenAPI/Swagger UI, and Docker Compose are pending.
+The task domain, application use cases, persistence, and runtime wiring are implemented.
+Task endpoints, the frontend, runtime OpenAPI/Swagger UI, and Docker Compose are pending.
 The scope below describes the full planned v1.
 
 ## Planned Scope
@@ -43,7 +43,7 @@ v1 scope. Draft task fields and status transitions are defined in the
 
 Registration always assigns `USER`. Account permissions are enforced by backend
 services and HTTP security. Task application services enforce assignment and access
-rules in unit tests; persistence/principal adapters and runtime wiring remain pending.
+rules through persistence and principal adapters, with H2 integration coverage.
 Frontend guards remain planned. See
 [ADR-0006](docs/adr/0006-security.md) for the authorization policy.
 
@@ -75,7 +75,7 @@ SPA communicating over REST is planned.
 
 | Location | Purpose | Current state |
 | --- | --- | --- |
-| `backend/` | Spring Boot modular monolith | Account HTTP API, JWT security, account persistence, and task domain/use cases implemented |
+| `backend/` | Spring Boot modular monolith | Account HTTP API/JWT and task domain, use cases, JPA persistence, and audit wiring implemented |
 | `frontend/` | Angular SPA | Not scaffolded |
 | `docs/adr/` | Accepted architecture decisions | Available |
 | `docker-compose.yml` | Local PostgreSQL infrastructure | Planned |
@@ -90,13 +90,13 @@ SPA communicating over REST is planned.
 | `common` | Small domain-neutral shared types and utilities | None |
 
 The `auth`, `user`, and `common` modules are implemented and closed; `task` is a
-closed module with domain and application logic implemented. Public module contracts and DTOs live in
-module root packages. Internal
+closed module with domain, application logic, persistence, and principal/audit adapters
+implemented. Public module contracts and DTOs live in module root packages. Internal
 code separates application use cases, infrastructure, presentation, and domain
 rules where applicable. HTTP request DTOs remain internal to presentation packages.
 The task domain stores immutable assignee and creator IDs. Application
-services validate recipients through the public `user` API; persistence will
-use stable account IDs without cross-module JPA associations.
+services validate recipients through the public `user` API. Persistence uses
+stable account IDs without cross-module JPA associations.
 
 ### Task implementation sequence
 
@@ -105,11 +105,12 @@ use stable account IDs without cross-module JPA associations.
 2. **Completed: application business logic.** Task use cases enforce assignment validation
    and personal/admin access rules through storage, current-user, and audit ports.
    Tests exercise these rules with in-memory fakes.
-3. **Next: persistence and adapters.** Implement JPA storage, migrations, principal lookup,
-   and transactional administrative audit storage; verify database behavior.
-4. **HTTP API.** Add controllers, partial-update handling, error mapping, and contract tests.
+3. **Implemented: persistence and adapters.** JPA storage, the V2 migration, principal lookup,
+   transactional service wiring, and audit storage are in place. H2 tests pass;
+   PostgreSQL migration/integration verification is blocked by unavailable Docker.
+4. **Next: HTTP API.** Add controllers, partial-update handling, error mapping, and contract tests.
 
-See the [task domain guide](backend/README.md#task-domain-and-next-steps) for the
+See the [task implementation guide](backend/README.md#task-domain-and-next-steps) for the
 implemented rules and remaining responsibilities.
 
 Spring Modulith verification tests check module cycles, internal-package
@@ -243,10 +244,10 @@ Docker-dependent tests fail if Docker is unavailable.
 To run the tests that do not require Docker and build the package:
 
 ```powershell
-.\mvnw.cmd "-Dtest=*,!UserModuleTests,!TaskManagerApplicationTests" clean verify
+.\mvnw.cmd "-Dtest=*,!UserModuleTests,!TaskManagerApplicationTests,!PostgresTaskPersistenceTests" clean verify
 ```
 
-This excludes the two PostgreSQL-dependent test classes and does not verify
+This excludes the three PostgreSQL-dependent test classes and does not verify
 PostgreSQL migrations or persistence. Run the full suite with Docker before
 treating those behaviors as verified.
 
@@ -273,11 +274,12 @@ frontend install/build commands will be needed once it is scaffolded.
 - [x] Task fields, validation, and lifecycle specified in the draft API contract.
 - [x] Task domain implemented and verified with domain and architecture tests.
 - [x] Task application use cases and authorization verified independently of persistence.
+- [x] Task persistence, principal wiring, audit survival, and rollback verified against H2.
 - [x] Account registration, login, token rejection, and password changes verified through HTTP tests.
 - [ ] Frontend authentication, expiry handling, and client-side logout work end to end.
 - [x] Task application tests cover user isolation, admin access, and assignment validation.
 - [ ] Task isolation, self-assignment, and admin assignment verified through HTTP and persistence.
-- [ ] Administrative task edits and deletions recorded in transactional audit records.
+- [x] Administrative task edits/deletions and audit rollback verified against H2.
 - [x] Account administration and documented administrator bootstrap work through HTTP (H2 verified).
 - [x] Disabled-account login and the accepted stale-token behavior verified.
 - [x] Module verification is included in Maven tests and passes in the focused run.
@@ -288,9 +290,10 @@ frontend install/build commands will be needed once it is scaffolded.
 - [ ] Development API documentation is available; production access is restricted.
 - [ ] Setup and verification instructions are reproducible from a fresh checkout.
 
-Latest focused verification: 17 task application tests, 11 domain tests, and 4 architecture/module tests
-passed through Maven Surefire on 2026-09-27. The normal build encountered local
-wrapper and dependency-cache access errors; compiled tests were run directly.
+Latest verification: all 128 Docker-free tests passed through Maven Surefire on
+2026-09-27, including 8 task persistence integration tests. Nine PostgreSQL task
+tests could not start because Docker was unavailable. The normal build encountered
+local dependency-cache access errors; compiled tests were run directly.
 The earlier clean package build passed 92 Docker-free tests before the task domain
 was added. A clean build of the current revision and PostgreSQL verification remain pending.
 

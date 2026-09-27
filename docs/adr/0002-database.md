@@ -2,7 +2,7 @@
 
 **Status:** Accepted  
 **Date:** 2026-09-15  
-**Updated:** 2026-09-23
+**Updated:** 2026-09-27
 
 ## Context
 
@@ -21,6 +21,15 @@ We need disposable local runs and realistic verification of persistence and migr
   migrations are immutable; subsequent changes use new migrations.
 - **Integration tests:** Testcontainers with PostgreSQL 16 using the same
   migrations and Hibernate validation as the PostgreSQL profile.
+
+## Implementation status (2026-09-27)
+
+V1 creates accounts; V2 adds tasks and administrative audit storage. Tasks reference
+accounts by scalar UUID foreign keys without cross-module JPA associations. Audit
+rows have no task foreign key so deletion history survives. H2 creates the entity
+schema through Hibernate and does not run these migrations. H2 persistence and
+rollback tests pass; PostgreSQL migration/constraint tests are present but blocked
+by unavailable Docker. Local Compose remains planned.
 
 ## Rationale
 

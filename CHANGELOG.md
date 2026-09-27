@@ -1,10 +1,31 @@
 # Changelog
 
 Notable project changes are recorded here, newest first. The project has no tagged
-releases. Account HTTP endpoints and JWT authentication are implemented; task endpoints
-and the frontend remain planned.
+releases. Account HTTP endpoints and JWT authentication are implemented, along with
+task domain, application logic, persistence, and transactional audit wiring. Task
+endpoints and the frontend remain planned. Older entries describe the state at
+their implementation milestone; the newest entry records current verification.
 
 ## Unreleased
+
+### Task persistence and transactional wiring
+
+- Added JPA task storage with scoped queries, literal title filtering, filtered totals,
+  stable pagination, immutable attribution, and dynamic updates.
+- Added the V2 PostgreSQL migration for task/audit tables, constraints, account foreign
+  keys, and indexes. Audit records retain scalar IDs and survive task deletion.
+- Implemented synchronous audit persistence, the Spring Security principal adapter,
+  and transactional service wiring. Storage/audit adapters require a shared transaction.
+- Added shared H2/PostgreSQL integration tests, including rollback after audit flush.
+  All eight H2 integration tests passed; nine PostgreSQL tests could not start because
+  Testcontainers found no running Docker environment. PostgreSQL verification remains pending.
+- Updated implementation status and Docker-free test selectors. Task HTTP adapters are next.
+- Aligned module summaries and API availability documentation with the persistence
+  milestone, and added a verification table distinguishing H2 results from blocked
+  PostgreSQL checks and the unverified clean build.
+- All 128 Docker-free regression tests passed through Surefire, including account
+  HTTP/JWT tests with the new task wiring. The normal build still reports local
+  dependency-cache access errors; compiled classes were tested directly.
 
 ### Task application business logic
 

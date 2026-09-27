@@ -12,9 +12,9 @@ and creator IDs, title/description validation by Unicode code points, optional d
 dates, and TODO/IN_PROGRESS/DONE status changes (including reopening). New tasks
 default to TODO; all editable fields are validated before an update changes state.
 Task application services now implement personal and administrative use cases,
-assignment validation, and authorization through ports. Persistence, principal/audit
-adapters, Spring bean wiring, and HTTP adapters remain pending. The Angular UI and
-runtime OpenAPI/Swagger UI remain pending.
+assignment validation, and authorization through ports. JPA persistence, principal/audit
+adapters, and transactional Spring wiring are implemented. Task HTTP adapters, the
+Angular UI, and runtime OpenAPI/Swagger UI remain pending.
 
 ## HTTP endpoints
 
@@ -302,14 +302,30 @@ apply scope and all filters before counting/pagination, with the contract's stab
 Task-owned ports are `TaskStore`, `CurrentTaskActor`, and `TaskAudit`. Admin updates
 and deletions append immutable audit entries with actor/task IDs, UTC time, action,
 and field changes; failures propagate. Transaction annotations declare the intended
-boundary. Services are not component-scanned yet: register them as transactional beans
-when the adapters exist. In-memory tests verify orchestration, not database rollback.
+boundary. `TaskConfiguration` registers the services as transactional beans, and
+`SpringSecurityTaskActor` reads token identity/authorities without querying account
+status on each request.
 
-Next, implement JPA/Flyway persistence, the principal adapter, and audit storage,
-then wire the services. Administrative mutations and audit writes must share a
-transaction; integration tests must prove rollback and audit survival after deletion.
-Add HTTP controllers, JSON field-presence handling, error mapping, and contract tests
-afterward. Task routes remain unavailable until those adapters are implemented.
+`JpaTaskStore` maps domain objects to internal JPA entities. Queries apply assignee,
+status, and case-insensitive literal title filters before counting/pagination. LIKE
+wildcards and the escape character are escaped. Updates preserve attribution and
+creation time and use Hibernate dynamic updates. Database account references are
+scalar UUIDs, with foreign keys in the PostgreSQL migration and no cross-module JPA associations.
+
+`V2__create_tasks_and_audit.sql` adds task/audit tables, constraints, and list indexes.
+`JpaTaskAudit` writes JSON field changes as text and flushes in the task mutation's
+transaction. Both adapters require an existing transaction. Audit rows have no task
+foreign key and survive deletion. There is no public audit retrieval endpoint;
+database/operator access must restrict audit reads.
+
+Eight shared persistence contract tests cover storage, query isolation/filtering,
+ordering, audit survival, principal validation, and rollback after audit flush.
+They pass on H2. The PostgreSQL subclass also checks V2 constraints, but its nine
+tests could not start because Docker was unavailable. PostgreSQL behavior remains
+unverified until that suite runs.
+
+Next, add HTTP controllers, JSON field-presence handling, error mapping, and contract
+tests. Task routes remain unavailable until those adapters are implemented.
 
 ## Run and verify
 
@@ -328,25 +344,44 @@ Module documentation is generated under `target/spring-modulith-docs/`.
 For a clean package build with all tests that do not require Docker:
 
 ```powershell
-.\mvnw.cmd "-Dtest=*,!UserModuleTests,!TaskManagerApplicationTests" clean verify
+.\mvnw.cmd "-Dtest=*,!UserModuleTests,!TaskManagerApplicationTests,!PostgresTaskPersistenceTests" clean verify
 ```
 
-The earlier clean run, before adding the task domain, passed 92 tests. The two excluded classes require PostgreSQL
+The earlier clean run, before adding the task domain, passed 92 tests. The three excluded classes require PostgreSQL
 Testcontainers. Run the full `verify` command with Docker available before treating
 PostgreSQL behavior as verified for the current revision. Tests supply their own
 signing-key fixture; application startup requires either the H2 local setup or an external `JWT_SECRET`.
 
-For focused task application, domain, and architecture verification:
+For focused task persistence, application, domain, and architecture verification:
 
 ```powershell
-.\mvnw.cmd "-Dtest=TaskServiceTests,TaskTests,LayerArchitectureTests,ModularityTests" test
+.\mvnw.cmd "-Dtest=H2TaskPersistenceTests,TaskServiceTests,TaskTests,LayerArchitectureTests,ModularityTests" test
 ```
 
-On 2026-09-27, all 32 focused tests passed (17 application, 11 domain, 3 layer
-architecture, and 1 Modulith verification). The wrapper failed to start in the agent environment;
-cached Maven 3.9.16 compiled the classes but encountered dependency-cache access
-errors while closing JARs. Running the compiled tests directly with `surefire:test`
-succeeded. This focused result is not a clean build or full-suite verification.
+On 2026-09-27, all 128 Docker-free tests passed, including 8 task persistence tests,
+17 task application tests, 11 task domain tests, architecture checks, and account
+HTTP/JWT regressions. The focused task/architecture subset passed 40 tests. Nine
+PostgreSQL task tests could not start because Docker was unavailable. To verify
+the migration and PostgreSQL behavior once Docker is running:
+
+```powershell
+.\mvnw.cmd "-Dtest=PostgresTaskPersistenceTests" test
+```
+
+Cached Maven 3.9.16 compiled current classes but encountered dependency-cache access
+errors while closing JARs. Running those classes directly with `surefire:test`
+succeeded. These results do not establish a clean build or PostgreSQL verification.
+
+| Verification scope | Latest result (2026-09-27) |
+| --- | --- |
+| Docker-free regression suite | 128 passed through Surefire |
+| Task H2 persistence and transaction tests | 8 passed, included in the 128 |
+| Task PostgreSQL migrations and persistence | 9 tests blocked during startup by unavailable Docker |
+| Clean build of this revision | Not verified because of local Maven dependency-cache access errors |
+
+The passing H2 tests include rollback of both task and audit writes after an audit
+flush. H2 uses Hibernate schema creation, so those tests do not validate V2 SQL,
+PostgreSQL foreign keys, or PostgreSQL-specific behavior.
 
 The account tests were introduced before their implementations. The development-profile
 duplicate-email test also reproduced an H2/PostgreSQL constraint-name difference

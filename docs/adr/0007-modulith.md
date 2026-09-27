@@ -69,10 +69,11 @@ listener alone is not a durable delivery guarantee.
 All four closed modules are present. The task domain and application use cases are
 implemented, with public contracts and DTOs in `task` and storage, principal, and
 audit ports under `task.internal.application.port`. Recipient lookup uses public
-`AccountLookup`; no user internals are accessed. Task services declare transactional
-boundaries but await adapter implementations and transactional bean registration.
-Layer and Modulith checks pass in the focused test run. Database integration and
-runtime task wiring remain pending; see the [backend guide](../../backend/README.md#task-domain-and-next-steps).
+`AccountLookup`; no user internals are accessed. Task services are wired as transactional
+beans with JPA storage, a Spring Security principal adapter, and audit persistence.
+H2 tests verify shared mutation/audit transactions; PostgreSQL tests are blocked by
+unavailable Docker. Layer and Modulith checks pass. Task HTTP adapters remain pending;
+see the [backend guide](../../backend/README.md#task-domain-and-next-steps).
 
 ## Rationale
 

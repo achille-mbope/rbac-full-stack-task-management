@@ -13,7 +13,7 @@ import net.mbope.taskmanager.task.internal.domain.Task;
 import net.mbope.taskmanager.user.AccountLookup;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Register as a transactional bean when task storage and audit adapters are available. */
+/** Administrative mutations and audit writes share the transaction configured by TaskConfiguration. */
 @Transactional(readOnly = true)
 public class TaskAdministrationService implements TaskAdministration {
     private final TaskStore tasks;

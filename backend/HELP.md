@@ -12,7 +12,8 @@ The default development profile uses disposable H2. PostgreSQL tests use
 [TestcontainersConfiguration](src/test/java/net/mbope/taskmanager/TestcontainersConfiguration.java).
 Docker Compose remains planned.
 
-Task domain and application tests run without a database. Task persistence,
-principal/audit adapters, transactional wiring, and HTTP endpoints remain pending.
+Task domain and application tests run without a database. Persistence and audit
+adapters are wired and covered by H2 integration tests. PostgreSQL verification
+requires Docker; task HTTP endpoints remain pending.
 See [task implementation notes](README.md#task-domain-and-next-steps) and
 [verification results](README.md#run-and-verify).

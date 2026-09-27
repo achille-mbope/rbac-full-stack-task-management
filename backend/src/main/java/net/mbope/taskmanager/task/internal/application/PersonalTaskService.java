@@ -9,7 +9,7 @@ import net.mbope.taskmanager.task.internal.application.port.TaskStore;
 import net.mbope.taskmanager.task.internal.domain.Task;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Register as a transactional bean when the persistence and principal adapters are available. */
+/** Personal use cases; transaction management is enabled by TaskConfiguration. */
 @Transactional(readOnly = true)
 public class PersonalTaskService implements PersonalTasks {
     private final TaskStore tasks;
