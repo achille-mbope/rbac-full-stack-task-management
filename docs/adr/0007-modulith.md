@@ -72,7 +72,8 @@ audit ports under `task.internal.application.port`. Recipient lookup uses public
 `AccountLookup`; no user internals are accessed. Task services are wired as transactional
 beans with JPA storage, a Spring Security principal adapter, and audit persistence.
 H2 tests verify shared mutation/audit transactions; PostgreSQL tests are blocked by
-unavailable Docker. Layer and Modulith checks pass. Task HTTP adapters remain pending;
+unavailable Docker. Task HTTP adapters call public module contracts and keep request/
+response DTOs inside presentation. Layer and Modulith checks pass;
 see the [backend guide](../../backend/README.md#task-domain-and-next-steps).
 
 ## Rationale

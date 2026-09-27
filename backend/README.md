@@ -13,8 +13,8 @@ dates, and TODO/IN_PROGRESS/DONE status changes (including reopening). New tasks
 default to TODO; all editable fields are validated before an update changes state.
 Task application services now implement personal and administrative use cases,
 assignment validation, and authorization through ports. JPA persistence, principal/audit
-adapters, and transactional Spring wiring are implemented. Task HTTP adapters, the
-Angular UI, and runtime OpenAPI/Swagger UI remain pending.
+adapters, transactional Spring wiring, and personal/admin HTTP adapters are implemented.
+The Angular UI and runtime OpenAPI/Swagger UI remain pending.
 
 ## HTTP endpoints
 
@@ -26,6 +26,12 @@ Angular UI, and runtime OpenAPI/Swagger UI remain pending.
 | GET | `/api/v1/admin/users` | ADMIN; paginated account list |
 | PUT | `/api/v1/admin/users/{userId}/roles` | ADMIN; replaces roles |
 | PUT | `/api/v1/admin/users/{userId}/status` | ADMIN; enables/disables an account |
+| POST | `/api/v1/tasks` | Authenticated; creates a self-assigned task and returns 201 with Location |
+| GET | `/api/v1/tasks` | Lists tasks assigned to caller, including for ADMIN |
+| GET/PATCH/DELETE | `/api/v1/tasks/{taskId}` | Assignee; inaccessible tasks return 404 |
+| POST | `/api/v1/admin/tasks` | ADMIN; creates a task assigned to an enabled account |
+| GET | `/api/v1/admin/tasks` | ADMIN; lists all tasks with optional assignee filter |
+| GET/PATCH/DELETE | `/api/v1/admin/tasks/{taskId}` | ADMIN; manages any task, with audit records for edits/deletions |
 
 JSON request/response shapes follow [the API contract](../docs/api/openapi.json).
 Unknown JSON fields are rejected, including roles supplied during registration.
@@ -177,6 +183,10 @@ Login/registration rate limiting remains deferred and is required before public 
 | `auth.internal.infrastructure.JwtPolicy`, `JwtClaimsValidator`, `JwtTokenIssuer` | Define token settings, validate claims, and issue tokens |
 | `user.internal.presentation` | Separate registration, password, and account-administration controllers and their request DTOs |
 | `common.internal.presentation` | Strict JSON configuration and safe, shared HTTP validation/error mapping |
+| `task.internal.presentation.PersonalTaskController` | Assignee-scoped task CRUD through `PersonalTasks` |
+| `task.internal.presentation.TaskAdministrationController` | Administrative task CRUD through `TaskAdministration` |
+| `task.internal.presentation.TaskProblemAdvice` | Map task validation, missing resources, and disabled recipients to Problem Details |
+| `task.internal.presentation` request/response DTOs | Creation defaults, PATCH field presence, and HTTP response shapes |
 
 `HttpSecurityConfiguration` activates only for servlet web applications. Its
 stateless filter chain disables request caching, so unauthenticated requests are
@@ -324,8 +334,55 @@ They pass on H2. The PostgreSQL subclass also checks V2 constraints, but its nin
 tests could not start because Docker was unavailable. PostgreSQL behavior remains
 unverified until that suite runs.
 
-Next, add HTTP controllers, JSON field-presence handling, error mapping, and contract
-tests. Task routes remain unavailable until those adapters are implemented.
+`PersonalTaskController` and `TaskAdministrationController` expose these use cases.
+Creation DTOs accept title, description, status (default TODO), and a YYYY-MM-DD due
+date; only the admin DTO accepts assigneeId. Creator IDs, task IDs, and timestamps
+are server-owned. `UpdateTaskRequest` records field presence: omission preserves a
+value, while null clears description/dueDate. Empty patches and null title/status
+are rejected. Unknown fields and incompatible JSON types are rejected.
+
+`TaskResponse` and `TaskPageResponse` map public use-case results to HTTP responses.
+Creation returns 201 and a Location under the same personal/admin route; deletion
+returns 204 with an empty body. `TaskProblemAdvice` maps validation, missing/inaccessible
+tasks, missing recipients, and disabled recipients to the documented Problem Details.
+Admin authorization runs in the existing security chain before body/path parsing,
+and again in application services before lookup. Controllers access public task
+contracts without reaching into domain or persistence packages.
+
+### Try the task API
+
+After login, send the bearer token with `Content-Type: application/json`:
+
+```http
+POST /api/v1/tasks
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{"title":"Plan work","description":"Prepare the next release","dueDate":"2026-10-01"}
+```
+
+Follow the response's Location to read the task. To complete it or clear its due date,
+send `PATCH` to that same URL with `{"status":"DONE","dueDate":null}`. Use
+`GET /api/v1/tasks?page=0&size=20&status=TODO&q=plan` to filter your tasks. Administrators
+use `POST /api/v1/admin/tasks` with an additional `assigneeId`; personal routes stay
+assignee-scoped even for administrators. Admin lists accept an optional `assigneeId`.
+Title search is a case-insensitive literal substring, so URL-encode query values.
+
+| Request outcome | HTTP response |
+| --- | --- |
+| Create a personal or assigned task | 201 with task body and Location |
+| Read, list, or update tasks | 200 with task or page body |
+| Delete a task | 204 with no body |
+| Invalid fields, empty PATCH, or immutable fields supplied | 400 validation Problem Details |
+| Missing or invalid bearer token | 401 with a bearer challenge |
+| Non-admin calls an admin task route | 403 before request-body parsing or lookup |
+| Missing task or another assignee's task on personal routes | Identical 404 details |
+| Missing assignment recipient | 404 |
+| Disabled assignment recipient | 409 with `assignee-disabled` problem type |
+
+Run only the task HTTP checks from `backend/` with
+`.\mvnw.cmd "-Dtest=TaskHttpTests" test`. These checks use signed JWTs, the real
+security filter chain, and disposable H2 storage; no separate running server is needed.
 
 ## Run and verify
 
@@ -352,16 +409,17 @@ Testcontainers. Run the full `verify` command with Docker available before treat
 PostgreSQL behavior as verified for the current revision. Tests supply their own
 signing-key fixture; application startup requires either the H2 local setup or an external `JWT_SECRET`.
 
-For focused task persistence, application, domain, and architecture verification:
+For focused task HTTP, persistence, application, domain, and architecture verification:
 
 ```powershell
-.\mvnw.cmd "-Dtest=H2TaskPersistenceTests,TaskServiceTests,TaskTests,LayerArchitectureTests,ModularityTests" test
+.\mvnw.cmd "-Dtest=TaskHttpTests,H2TaskPersistenceTests,TaskServiceTests,TaskTests,LayerArchitectureTests,ModularityTests" test
 ```
 
-On 2026-09-27, all 128 Docker-free tests passed, including 8 task persistence tests,
-17 task application tests, 11 task domain tests, architecture checks, and account
-HTTP/JWT regressions. The focused task/architecture subset passed 40 tests. Nine
-PostgreSQL task tests could not start because Docker was unavailable. To verify
+On 2026-09-27, all 172 Docker-free tests passed, including 44 task HTTP tests,
+8 task persistence tests, 17 task application tests, 11 task domain tests,
+architecture checks, and account HTTP/JWT regressions. Task/architecture checks
+account for 84 tests. The earlier PostgreSQL task run could not start its nine tests
+because Docker was unavailable. To verify
 the migration and PostgreSQL behavior once Docker is running:
 
 ```powershell
@@ -374,8 +432,9 @@ succeeded. These results do not establish a clean build or PostgreSQL verificati
 
 | Verification scope | Latest result (2026-09-27) |
 | --- | --- |
-| Docker-free regression suite | 128 passed through Surefire |
-| Task H2 persistence and transaction tests | 8 passed, included in the 128 |
+| Docker-free regression suite | 172 passed through Surefire |
+| Task HTTP tests with signed JWTs and H2 | 44 passed, included in the 172 |
+| Task H2 persistence and transaction tests | 8 passed, included in the 172 |
 | Task PostgreSQL migrations and persistence | 9 tests blocked during startup by unavailable Docker |
 | Clean build of this revision | Not verified because of local Maven dependency-cache access errors |
 

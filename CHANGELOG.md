@@ -2,11 +2,28 @@
 
 Notable project changes are recorded here, newest first. The project has no tagged
 releases. Account HTTP endpoints and JWT authentication are implemented, along with
-task domain, application logic, persistence, and transactional audit wiring. Task
-endpoints and the frontend remain planned. Older entries describe the state at
+task domain, application logic, persistence, transactional audit wiring, and HTTP
+endpoints. The frontend remains planned. Older entries describe the state at
 their implementation milestone; the newest entry records current verification.
 
 ## Unreleased
+
+### Task HTTP API
+
+- Added personal and administrative CRUD controllers with dedicated creation,
+  assignment, partial-update, task-response, and page-response DTOs.
+- Implemented creation defaults, strict calendar-date input, omitted-versus-null
+  update handling, followable Location headers, and empty 204 deletion responses.
+- Added task Problem Details mapping and HTTP tests with signed JWTs covering
+  authorization, assignment, attribution spoofing, validation, filtering, and auditing.
+- Updated endpoint documentation, the task API walkthrough, OpenAPI implementation
+  status, and API/security/module ADRs. Runtime OpenAPI/Swagger UI remains pending.
+- Documented HTTP component ownership, response/error outcomes, DTO field-presence
+  semantics, and the standalone task HTTP test command; linked the walkthrough and
+  executable request examples from the README and API guide.
+- All 44 new task HTTP tests and all 172 Docker-free regression tests passed through
+  Surefire. Maven dependency-cache access errors still prevent a normal clean-build
+  verification; PostgreSQL verification remains blocked by unavailable Docker.
 
 ### Task persistence and transactional wiring
 

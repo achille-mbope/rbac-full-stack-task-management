@@ -3,7 +3,7 @@
   "info": {
     "title": "Task Manager API",
     "version": "0.1.0-draft",
-    "description": "Draft v1 API contract. Account HTTP endpoints and JWT authentication are implemented. Task domain and application use cases are implemented and tested through ports; task persistence and runtime wiring are implemented with H2 integration coverage. PostgreSQL verification remains pending, and task HTTP endpoints are not implemented. Based on ADR-0001 through ADR-0007. See docs/api/README.md for design choices, lifecycle, error identifiers, and implementation requirements. All request objects reject unknown properties. All application-controlled API errors use application/problem+json. Authentication is bearer-header-only; no authentication cookies. Deployed environments require HTTPS."
+    "description": "Draft v1 API contract. Account HTTP endpoints and JWT authentication are implemented. Task domain and application use cases are implemented and tested through ports; task persistence and runtime wiring are implemented with H2 integration coverage. Personal and administrative task HTTP endpoints are implemented. PostgreSQL verification remains pending. Based on ADR-0001 through ADR-0007. See docs/api/README.md for design choices, lifecycle, error identifiers, and implementation requirements. All request objects reject unknown properties. All application-controlled API errors use application/problem+json. Authentication is bearer-header-only; no authentication cookies. Deployed environments require HTTPS."
   },
   "servers": [
     {

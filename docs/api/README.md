@@ -6,21 +6,29 @@ administrator account operations are implemented in the backend. The task domain
 implements field validation, immutable attribution, and status changes. Application
 use cases implement assignment, access rules, and partial updates through ports.
 Task persistence and runtime wiring are implemented with H2 integration coverage.
-Task HTTP operations remain planned; runtime-generated OpenAPI
-and Swagger UI are not yet available.
+Task HTTP operations are implemented; runtime-generated OpenAPI and Swagger UI
+are not yet available.
 Import it into an OpenAPI 3.1-compatible viewer or client generator.
 
 For manual testing of the implemented authentication endpoints, follow the
 [Postman registration and login walkthrough](../../backend/README.md#test-registration-and-login-with-postman).
 It covers local startup, JSON bodies, bearer tokens, and expected success and error
-responses. Task routes in this draft contract are not available for testing yet.
+responses. For task requests, see the [task API walkthrough](../../backend/README.md#try-the-task-api).
 
 | Task implementation layer | Current status |
 | --- | --- |
 | Domain and application use cases | Implemented; domain and in-memory application tests pass |
 | JPA storage, principal adapter, and transactional audit wiring | Implemented; H2 integration tests pass |
 | PostgreSQL migration and persistence verification | Tests added; execution blocked by unavailable Docker |
-| HTTP controllers, JSON update handling, and error mapping | Next implementation step; task routes remain unavailable |
+| HTTP controllers, JSON update handling, and error mapping | Implemented for personal and admin routes |
+
+The HTTP implementation uses separate personal/admin creation DTOs. Personal creation
+never accepts attribution fields; admin creation accepts only `assigneeId` in addition
+to editable task fields. PATCH records property presence, so omitted values are retained
+and explicit null clears only description or dueDate. Due dates use YYYY-MM-DD strings.
+Both task and paginated responses have dedicated HTTP DTOs. See
+[TaskHttpTests](../../backend/src/test/java/net/mbope/taskmanager/task/TaskHttpTests.java)
+for executable request/response examples and authorization checks.
 
 ## Scope and design choices
 
@@ -162,19 +170,20 @@ The task domain has 11 passing tests covering creation defaults, Unicode length
 limits, required fields, all status transitions, optional-field clearing, immutable
 identity/attribution, restoration, and rejected updates leaving state unchanged.
 Layer and Modulith checks also pass. This verifies domain behavior only; the task
-routes above are still unavailable.
+HTTP behavior is verified separately by `TaskHttpTests` using signed JWTs and H2.
 
 Application use cases now have 17 passing in-memory tests for assignment, personal/admin access,
 partial updates, list scoping/filter forwarding, and audit requests/failure propagation.
 Persistence adapters and transactional wiring now have eight passing H2 integration
 tests, including database filtering, audit survival, and rollback after audit flush.
 PostgreSQL migration/integration tests could not start because Docker was unavailable.
-HTTP adapters and contract verification are next. See the
+The 44 HTTP tests cover personal/admin access, creation URLs, request validation, partial
+updates, list filters, and audit persistence. See the
 [backend implementation sequence](../../backend/README.md#task-domain-and-next-steps).
 
-The latest regression run passed all 128 Docker-free tests, including 40 task and
-architecture checks (8 persistence, 17 application, 11 domain, and 4 architecture/module).
-Nine PostgreSQL task tests could not start because Docker was unavailable. Compiled
+The latest regression run passed all 172 Docker-free tests, including 84 task and
+architecture checks (44 HTTP, 8 persistence, 17 application, 11 domain, and 4 architecture/module).
+The earlier run of nine PostgreSQL task tests could not start because Docker was unavailable. Compiled
 tests ran through Surefire after dependency-cache access errors; this does not establish
 a clean build or PostgreSQL verification. See the
 [verification notes](../../backend/README.md#run-and-verify).

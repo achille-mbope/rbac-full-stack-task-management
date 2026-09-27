@@ -39,8 +39,8 @@ The frontend needs predictable resource operations and a consistent error contra
 
 Account endpoints and Problem Details handling are implemented. Task domain and
 application contracts support CRUD, assignment/access rules, field-presence-aware
-updates, and query validation. Task HTTP endpoints and exception-to-response mapping
-are not implemented yet; the OpenAPI document describes their intended contract.
+updates, and query validation. Personal/admin task HTTP controllers, request/response
+DTOs, and exception-to-response mapping now implement the OpenAPI contract.
 Runtime OpenAPI/Swagger UI also remains pending. See the
 [API implementation notes](../api/README.md#implementation-verification).
 

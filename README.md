@@ -11,7 +11,8 @@ See the [changelog](CHANGELOG.md) for the latest project changes.
 are present. The `user` and `auth` modules provide account REST endpoints, persistence,
 and JWT authentication. See [backend setup and module API](backend/README.md).
 The task domain, application use cases, persistence, and runtime wiring are implemented.
-Task endpoints, the frontend, runtime OpenAPI/Swagger UI, and Docker Compose are pending.
+Personal and administrative task HTTP endpoints are implemented. The frontend,
+runtime OpenAPI/Swagger UI, and Docker Compose remain pending.
 The scope below describes the full planned v1.
 
 ## Planned Scope
@@ -75,7 +76,7 @@ SPA communicating over REST is planned.
 
 | Location | Purpose | Current state |
 | --- | --- | --- |
-| `backend/` | Spring Boot modular monolith | Account HTTP API/JWT and task domain, use cases, JPA persistence, and audit wiring implemented |
+| `backend/` | Spring Boot modular monolith | Account/task HTTP APIs, JWT security, persistence, and transactional task auditing implemented |
 | `frontend/` | Angular SPA | Not scaffolded |
 | `docs/adr/` | Accepted architecture decisions | Available |
 | `docker-compose.yml` | Local PostgreSQL infrastructure | Planned |
@@ -90,7 +91,7 @@ SPA communicating over REST is planned.
 | `common` | Small domain-neutral shared types and utilities | None |
 
 The `auth`, `user`, and `common` modules are implemented and closed; `task` is a
-closed module with domain, application logic, persistence, and principal/audit adapters
+closed module with domain, application logic, persistence, HTTP, and principal/audit adapters
 implemented. Public module contracts and DTOs live in module root packages. Internal
 code separates application use cases, infrastructure, presentation, and domain
 rules where applicable. HTTP request DTOs remain internal to presentation packages.
@@ -108,7 +109,10 @@ stable account IDs without cross-module JPA associations.
 3. **Implemented: persistence and adapters.** JPA storage, the V2 migration, principal lookup,
    transactional service wiring, and audit storage are in place. H2 tests pass;
    PostgreSQL migration/integration verification is blocked by unavailable Docker.
-4. **Next: HTTP API.** Add controllers, partial-update handling, error mapping, and contract tests.
+4. **Implemented: HTTP API.** Personal/admin controllers, request/response DTOs,
+   partial-update handling, and Problem Details mapping are in place.
+
+Remaining work includes PostgreSQL verification, runtime API documentation, and the frontend.
 
 See the [task implementation guide](backend/README.md#task-domain-and-next-steps) for the
 implemented rules and remaining responsibilities.
@@ -143,9 +147,10 @@ PostgreSQL integration tests. See [ADR-0002](docs/adr/0002-database.md).
 
 The draft [OpenAPI 3.1 contract](docs/api/openapi.json) defines endpoints, request
 and response schemas, validation, and errors. See the [contract guide](docs/api/README.md)
-for task lifecycle rules, implemented application behavior, and remaining HTTP requirements.
+for task lifecycle rules, implemented HTTP behavior, and verification limits.
+Task request examples are available in the [HTTP walkthrough](backend/README.md#try-the-task-api).
 
-The implemented account API uses REST and JSON under `/api/v1`, with RFC 9457 Problem
+The implemented account and task APIs use REST and JSON under `/api/v1`, with RFC 9457 Problem
 Details errors (`application/problem+json`). OpenAPI will document operations,
 schemas, and bearer authentication. Swagger UI is planned at
 `/swagger-ui.html` in development.
@@ -278,7 +283,7 @@ frontend install/build commands will be needed once it is scaffolded.
 - [x] Account registration, login, token rejection, and password changes verified through HTTP tests.
 - [ ] Frontend authentication, expiry handling, and client-side logout work end to end.
 - [x] Task application tests cover user isolation, admin access, and assignment validation.
-- [ ] Task isolation, self-assignment, and admin assignment verified through HTTP and persistence.
+- [x] Task isolation, self-assignment, and admin assignment verified through HTTP and H2 persistence.
 - [x] Administrative task edits/deletions and audit rollback verified against H2.
 - [x] Account administration and documented administrator bootstrap work through HTTP (H2 verified).
 - [x] Disabled-account login and the accepted stale-token behavior verified.
@@ -290,8 +295,9 @@ frontend install/build commands will be needed once it is scaffolded.
 - [ ] Development API documentation is available; production access is restricted.
 - [ ] Setup and verification instructions are reproducible from a fresh checkout.
 
-Latest verification: all 128 Docker-free tests passed through Maven Surefire on
-2026-09-27, including 8 task persistence integration tests. Nine PostgreSQL task
+Latest verification: all 172 Docker-free tests passed through Maven Surefire on
+2026-09-27, including 44 task HTTP tests and 8 task persistence integration tests.
+Nine PostgreSQL task
 tests could not start because Docker was unavailable. The normal build encountered
 local dependency-cache access errors; compiled tests were run directly.
 The earlier clean package build passed 92 Docker-free tests before the task domain
