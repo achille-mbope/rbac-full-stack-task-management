@@ -13,8 +13,8 @@ The default development profile uses disposable H2. PostgreSQL tests use
 Docker Compose remains planned.
 
 Task domain and application tests run without a database. Persistence and audit
-adapters are wired and covered by H2 integration tests. PostgreSQL verification
-requires Docker. Personal/admin task HTTP endpoints are implemented; see the
+adapters are wired and covered by H2 and PostgreSQL integration tests. The full
+clean build passes 196 tests; PostgreSQL checks require Docker. Personal/admin task HTTP endpoints are implemented; see the
 [task API walkthrough](README.md#try-the-task-api).
 See [task implementation notes](README.md#task-domain-and-next-steps) and
 [verification results](README.md#run-and-verify).

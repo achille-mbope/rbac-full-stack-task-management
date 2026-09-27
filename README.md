@@ -107,12 +107,12 @@ stable account IDs without cross-module JPA associations.
    and personal/admin access rules through storage, current-user, and audit ports.
    Tests exercise these rules with in-memory fakes.
 3. **Implemented: persistence and adapters.** JPA storage, the V2 migration, principal lookup,
-   transactional service wiring, and audit storage are in place. H2 tests pass;
-   PostgreSQL migration/integration verification is blocked by unavailable Docker.
+   transactional service wiring, and audit storage are in place. H2 and PostgreSQL
+   migration/integration tests pass, including audit rollback and deletion history.
 4. **Implemented: HTTP API.** Personal/admin controllers, request/response DTOs,
    partial-update handling, and Problem Details mapping are in place.
 
-Remaining work includes PostgreSQL verification, runtime API documentation, and the frontend.
+Remaining work includes runtime API documentation, local Docker Compose, and the frontend.
 
 See the [task implementation guide](backend/README.md#task-domain-and-next-steps) for the
 implemented rules and remaining responsibilities.
@@ -288,20 +288,18 @@ frontend install/build commands will be needed once it is scaffolded.
 - [x] Account administration and documented administrator bootstrap work through HTTP (H2 verified).
 - [x] Disabled-account login and the accepted stale-token behavior verified.
 - [x] Module verification is included in Maven tests and passes in the focused run.
-- [ ] Verify the current revision against PostgreSQL; tests exist, but the latest run was blocked by unavailable Docker.
+- [x] Verify the current revision against PostgreSQL, including V2 migration and task transaction behavior.
 - [ ] Validation, 401, 403, and ownership-related 404 errors follow the API contract.
 - [ ] Frontend login, task list, forms, and filters work with the backend.
 - [ ] Local Compose starts PostgreSQL; application startup is documented separately.
 - [ ] Development API documentation is available; production access is restricted.
 - [ ] Setup and verification instructions are reproducible from a fresh checkout.
 
-Latest verification: all 172 Docker-free tests passed through Maven Surefire on
-2026-09-27, including 44 task HTTP tests and 8 task persistence integration tests.
-Nine PostgreSQL task
-tests could not start because Docker was unavailable. The normal build encountered
-local dependency-cache access errors; compiled tests were run directly.
-The earlier clean package build passed 92 Docker-free tests before the task domain
-was added. A clean build of the current revision and PostgreSQL verification remain pending.
+Latest verification (2026-09-27): `.\mvnw.cmd clean verify` passed all 196 tests
+and built the executable JAR. This includes 172 Docker-free tests and 24 PostgreSQL-backed
+tests, including V2 migration/constraint checks and transactional task audit rollback.
+The earlier Docker and Maven-cache failures were restricted-process access errors;
+the normal Maven build succeeds with access to Docker and the dependency cache.
 
 CI configuration is outside v1 scope. Local verification is required; future CI
 must run the same checks.

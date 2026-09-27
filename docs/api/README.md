@@ -18,8 +18,8 @@ responses. For task requests, see the [task API walkthrough](../../backend/READM
 | Task implementation layer | Current status |
 | --- | --- |
 | Domain and application use cases | Implemented; domain and in-memory application tests pass |
-| JPA storage, principal adapter, and transactional audit wiring | Implemented; H2 integration tests pass |
-| PostgreSQL migration and persistence verification | Tests added; execution blocked by unavailable Docker |
+| JPA storage, principal adapter, and transactional audit wiring | Implemented; H2 and PostgreSQL integration tests pass |
+| PostgreSQL migration and persistence verification | Nine task tests pass against PostgreSQL 16.15, including V2 constraints and audit rollback |
 | HTTP controllers, JSON update handling, and error mapping | Implemented for personal and admin routes |
 
 The HTTP implementation uses separate personal/admin creation DTOs. Personal creation
@@ -176,17 +176,16 @@ Application use cases now have 17 passing in-memory tests for assignment, person
 partial updates, list scoping/filter forwarding, and audit requests/failure propagation.
 Persistence adapters and transactional wiring now have eight passing H2 integration
 tests, including database filtering, audit survival, and rollback after audit flush.
-PostgreSQL migration/integration tests could not start because Docker was unavailable.
+All nine task PostgreSQL migration/integration tests also pass with Docker access.
 The 44 HTTP tests cover personal/admin access, creation URLs, request validation, partial
 updates, list filters, and audit persistence. See the
 [backend implementation sequence](../../backend/README.md#task-domain-and-next-steps).
 
-The latest regression run passed all 172 Docker-free tests, including 84 task and
-architecture checks (44 HTTP, 8 persistence, 17 application, 11 domain, and 4 architecture/module).
-The earlier run of nine PostgreSQL task tests could not start because Docker was unavailable. Compiled
-tests ran through Surefire after dependency-cache access errors; this does not establish
-a clean build or PostgreSQL verification. See the
-[verification notes](../../backend/README.md#run-and-verify).
+The latest `.\mvnw.cmd clean verify` run passed all 196 tests and packaged the
+executable JAR. This includes 172 Docker-free tests and 24 PostgreSQL-backed tests;
+the nine task PostgreSQL tests verify V2 migration/constraints and audit rollback.
+The previous Docker/cache access blockers are resolved by running with the required
+process access. See the [verification notes](../../backend/README.md#run-and-verify).
 
 Before implementation is considered complete, verify schema conformance, pagination
 and filtering, every status transition, nullable patch fields, unknown-field rejection,

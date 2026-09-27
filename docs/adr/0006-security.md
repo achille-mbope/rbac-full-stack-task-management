@@ -81,9 +81,9 @@ the earlier owner-only and creating-admin-only access rules.
 Account HTTP authorization and JWT handling are implemented. Task application tests
 cover self-assignment, assignee-scoped access for USER and ADMIN, admin checks before
 lookup, enabled-recipient validation, and administrative audit requests. Principal
-and persistence adapters and transactional audit storage are implemented. H2 integration
+and persistence adapters and transactional audit storage are implemented. H2 and PostgreSQL integration
 tests verify database rollback after audit flush and audit survival after deletion.
-PostgreSQL verification is blocked by unavailable Docker. Task HTTP endpoints enforce
+PostgreSQL verification passes with Docker access. Task HTTP endpoints enforce
 personal/admin access through the security chain and application services. Audit reads
 require restricted database/operator access; no public audit
 retrieval endpoint is exposed. See the

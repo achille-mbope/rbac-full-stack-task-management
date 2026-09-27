@@ -330,9 +330,9 @@ database/operator access must restrict audit reads.
 
 Eight shared persistence contract tests cover storage, query isolation/filtering,
 ordering, audit survival, principal validation, and rollback after audit flush.
-They pass on H2. The PostgreSQL subclass also checks V2 constraints, but its nine
-tests could not start because Docker was unavailable. PostgreSQL behavior remains
-unverified until that suite runs.
+They pass on H2 and PostgreSQL 16.15. The PostgreSQL subclass adds V2 constraint
+checks; all nine task PostgreSQL tests pass. Flyway applies V1/V2 and Hibernate
+validates the migrated schema before these integration tests run.
 
 `PersonalTaskController` and `TaskAdministrationController` expose these use cases.
 Creation DTOs accept title, description, status (default TODO), and a YYYY-MM-DD due
@@ -404,10 +404,10 @@ For a clean package build with all tests that do not require Docker:
 .\mvnw.cmd "-Dtest=*,!UserModuleTests,!TaskManagerApplicationTests,!PostgresTaskPersistenceTests" clean verify
 ```
 
-The earlier clean run, before adding the task domain, passed 92 tests. The three excluded classes require PostgreSQL
-Testcontainers. Run the full `verify` command with Docker available before treating
-PostgreSQL behavior as verified for the current revision. Tests supply their own
-signing-key fixture; application startup requires either the H2 local setup or an external `JWT_SECRET`.
+The three excluded classes require PostgreSQL Testcontainers. The Docker-free command
+does not verify PostgreSQL behavior; use the full `verify` command with Docker for
+that coverage. Tests supply their own signing-key fixture; application startup
+requires either the H2 local setup or an external `JWT_SECRET`.
 
 For focused task HTTP, persistence, application, domain, and architecture verification:
 
@@ -415,32 +415,36 @@ For focused task HTTP, persistence, application, domain, and architecture verifi
 .\mvnw.cmd "-Dtest=TaskHttpTests,H2TaskPersistenceTests,TaskServiceTests,TaskTests,LayerArchitectureTests,ModularityTests" test
 ```
 
-On 2026-09-27, all 172 Docker-free tests passed, including 44 task HTTP tests,
-8 task persistence tests, 17 task application tests, 11 task domain tests,
-architecture checks, and account HTTP/JWT regressions. Task/architecture checks
-account for 84 tests. The earlier PostgreSQL task run could not start its nine tests
-because Docker was unavailable. To verify
-the migration and PostgreSQL behavior once Docker is running:
+On 2026-09-27, `.\mvnw.cmd clean verify` passed all 196 tests with no failures,
+errors, or skips and packaged the executable JAR. The run used Maven 3.9.16,
+JDK 25.0.1 with Java 21 release compilation, Docker 29.8.0, and PostgreSQL 16.15
+from `postgres:16-alpine`.
+
+| Verification scope | Latest result (2026-09-27) |
+| --- | --- |
+| Full clean verification and executable JAR packaging | Passed; 196 tests |
+| Docker-free regression tests | 172 passed within the full run |
+| PostgreSQL-backed tests | 24 passed: 9 task, 14 account, 1 application startup |
+| Task HTTP tests with signed JWTs and H2 | 44 passed |
+| Task H2 persistence and transaction tests | 8 passed |
+
+For only the task PostgreSQL checks:
 
 ```powershell
 .\mvnw.cmd "-Dtest=PostgresTaskPersistenceTests" test
 ```
 
-Cached Maven 3.9.16 compiled current classes but encountered dependency-cache access
-errors while closing JARs. Running those classes directly with `surefire:test`
-succeeded. These results do not establish a clean build or PostgreSQL verification.
+The PostgreSQL tests apply Flyway V1/V2 to a disposable database and validate the
+result with Hibernate. They verify invalid status/oversized title/orphan assignee
+constraints, Unicode round trips, scoped filtering with literal SQL wildcard characters,
+filtered counts and pagination, deterministic ordering, and assignment validation.
+They also verify that audit records survive deletion and that a failure after an
+audit flush rolls back both task and audit writes.
 
-| Verification scope | Latest result (2026-09-27) |
-| --- | --- |
-| Docker-free regression suite | 172 passed through Surefire |
-| Task HTTP tests with signed JWTs and H2 | 44 passed, included in the 172 |
-| Task H2 persistence and transaction tests | 8 passed, included in the 172 |
-| Task PostgreSQL migrations and persistence | 9 tests blocked during startup by unavailable Docker |
-| Clean build of this revision | Not verified because of local Maven dependency-cache access errors |
-
-The passing H2 tests include rollback of both task and audit writes after an audit
-flush. H2 uses Hibernate schema creation, so those tests do not validate V2 SQL,
-PostgreSQL foreign keys, or PostgreSQL-specific behavior.
+Earlier Docker and Maven-cache failures came from restricted-process access. Docker
+was running; executing Maven with access to the Docker pipe and dependency cache
+resolved both failures without production-code changes. H2 tests remain useful for
+quick checks but do not replace the PostgreSQL suite.
 
 The account tests were introduced before their implementations. The development-profile
 duplicate-email test also reproduced an H2/PostgreSQL constraint-name difference

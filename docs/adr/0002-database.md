@@ -28,8 +28,9 @@ V1 creates accounts; V2 adds tasks and administrative audit storage. Tasks refer
 accounts by scalar UUID foreign keys without cross-module JPA associations. Audit
 rows have no task foreign key so deletion history survives. H2 creates the entity
 schema through Hibernate and does not run these migrations. H2 persistence and
-rollback tests pass; PostgreSQL migration/constraint tests are present but blocked
-by unavailable Docker. Local Compose remains planned.
+rollback tests pass. PostgreSQL 16.15 tests also pass: Flyway applies V1/V2, Hibernate
+validates the schema, and integration tests cover constraints, filtering, and audit
+rollback. Local Compose remains planned.
 
 ## Rationale
 

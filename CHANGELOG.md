@@ -8,6 +8,19 @@ their implementation milestone; the newest entry records current verification.
 
 ## Unreleased
 
+### PostgreSQL verification
+
+- Ran all 24 PostgreSQL-backed tests successfully with Docker access, including the
+  nine task persistence tests on PostgreSQL 16.15 (`postgres:16-alpine`).
+- Verified Flyway V1/V2 migration execution, Hibernate schema validation, V2 constraints,
+  scoped literal filtering/pagination, audit survival after deletion, and rollback of
+  both task and audit writes after an audit flush. No production-code fixes were needed.
+- Diagnosed the earlier Docker and Maven-cache failures as restricted-process access
+  errors. Running Maven with access to Docker and the dependency cache resolved them.
+- Completed `.\mvnw.cmd clean verify`: all 196 tests passed with no failures, errors,
+  or skips, and the executable JAR was packaged. Updated current README, API, and ADR
+  verification notes to replace the earlier blocked status.
+
 ### Task HTTP API
 
 - Added personal and administrative CRUD controllers with dedicated creation,
