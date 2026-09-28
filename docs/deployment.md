@@ -66,7 +66,8 @@ java -jar target/TaskManager-0.0.1-SNAPSHOT.jar --spring.config.additional-locat
 ```
 
 Use an external configuration path appropriate to the deployment host. Containers
-are optional; this change does not provide a Dockerfile or production orchestration.
+are optional; the repository provides local PostgreSQL Compose, but no application
+Dockerfile or production orchestration.
 
 ## Authentication request limits
 
@@ -147,13 +148,65 @@ Configuration tests reject unsafe overrides before other beans initialize. Limit
 tests cover expiry, separate/global quotas, capacity, concurrency, CORS, and spoofing.
 Diagnostics tests check correlation cleanup and exclusion of secret exception data.
 
-Latest verification (2026-09-28): `clean verify` passed all 246 tests, including
-218 Docker-free and 28 PostgreSQL-backed tests, and packaged the executable JAR.
+`ProductionTrustedProxyTests` also uses real HTTP connections to verify successful
+trusted forwarding, continued API authentication, and separate resolved-client quotas.
 
-Before public release, verify the actual certificate/proxy setup, perform a backup
-restoration drill, scan release dependencies, and run registration/login/task smoke
-tests through the public HTTPS URL. Existing 15-minute JWT revocation limitations
-and operator administrator recovery procedures still apply.
+Latest verification (2026-09-28): `clean verify` passed all 248 tests, including
+218 Docker-free and 30 PostgreSQL-backed tests, and packaged the executable JAR.
+
+## Public release checklist
+
+The following checks remain specific to the deployment environment. A passing
+local test suite or packaged smoke run does not complete them:
+
+- [ ] Verify public DNS, certificates, HTTPS enforcement, proxy trust, and private
+  application-port access using the actual deployment configuration.
+- [ ] Verify delivery of database credentials and the JWT signing key through the
+  deployment platform, and confirm startup uses `prod`.
+- [ ] Run registration, login, task operations, and authorization checks through
+  the public HTTPS URL; verify browser CORS against the intended frontend origin.
+- [ ] Restore a database backup and verify the recovered application data. Exercise
+  the migration/recovery procedure before changing a deployed schema.
+- [ ] Configure and exercise edge request-body limits, connection limits, and timeouts.
+- [ ] Connect monitoring and alerts for readiness, HTTP failures, authentication
+  rejection rates, and resource saturation; confirm alerts reach the operator.
+- [ ] Review release dependencies and resolve applicable findings.
+- [ ] If running multiple instances, configure shared authentication rate limiting
+  and verify that distributing requests across instances cannot bypass the quota.
+
+Existing 15-minute JWT revocation limitations and operator administrator recovery
+procedures still apply. Automated CI is a future improvement outside the current
+v1 scope; local verification remains required.
+
+## Packaged production smoke test
+
+After `clean verify`, run from `backend/` on Windows PowerShell:
+
+```powershell
+.\smoke-prod.ps1
+```
+
+Requires Docker Compose v2, `java`, JDK `keytool`, and `curl.exe` on `PATH`.
+If necessary, add your JDK's `bin` directory to `PATH`. An optional `-JarPath`
+selects another already-built executable JAR. The script does not build the artifact.
+
+The script creates an isolated Compose project with a random published database
+port and credentials, generates a short-lived localhost certificate, and runs
+`java -jar` with `prod` and direct TLS. Curl verifies that certificate and hostname;
+TLS verification is never disabled. Checks cover readiness, registration/login,
+task create/read/list/update/delete, anonymous and non-admin rejection, disabled
+documentation, and a 404 after deletion. Successful API calls exercise Flyway's
+schema and PostgreSQL persistence through the packaged application.
+
+The script stops its Java process, removes only its own Compose project and volume,
+restores changed process environment variables, and deletes generated secrets and
+request/response files. Logs and the public certificate remain under
+`backend/target/taskmanager-smoke-*/` for diagnosis. A forcibly interrupted shell
+may require cleanup of the specific project named in its output.
+
+Verified on 2026-09-28: the packaged smoke test passed with certificate-verified TLS.
+This validates a local production-profile deployment. Repeat the release checks
+above against the actual deployment's DNS, certificate, proxy, and secret delivery.
 
 ## References
 

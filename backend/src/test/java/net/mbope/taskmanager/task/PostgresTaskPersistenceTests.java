@@ -7,6 +7,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 
 import static org.assertj.core.api.Assertions.*;
 
+@org.springframework.test.context.ActiveProfiles("test")
 @Import(TestcontainersConfiguration.class)
 class PostgresTaskPersistenceTests extends TaskPersistenceContract {
     @Test

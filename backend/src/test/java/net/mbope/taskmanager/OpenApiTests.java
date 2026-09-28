@@ -17,7 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("h2")
+@ActiveProfiles({"test", "h2"})
 class OpenApiTests {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper json;

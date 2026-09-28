@@ -496,10 +496,10 @@ Module documentation is generated under `target/spring-modulith-docs/`.
 For a clean package build with all tests that do not require Docker:
 
 ```powershell
-.\mvnw.cmd "-Dtest=*,!UserModuleTests,!TaskManagerApplicationTests,!PostgresTaskPersistenceTests,!ProductionHttpTests" clean verify
+.\mvnw.cmd "-Dtest=*,!UserModuleTests,!TaskManagerApplicationTests,!PostgresTaskPersistenceTests,!ProductionHttpTests,!ProductionTrustedProxyTests" clean verify
 ```
 
-The four excluded classes require PostgreSQL Testcontainers. The Docker-free command
+The five excluded classes require PostgreSQL Testcontainers. The Docker-free command
 does not verify PostgreSQL behavior; use the full `verify` command with Docker for
 that coverage. Tests supply their own signing-key fixture; application startup
 requires either the H2 local setup or an external `JWT_SECRET`.
@@ -510,19 +510,20 @@ For focused task HTTP, persistence, application, domain, and architecture verifi
 .\mvnw.cmd "-Dtest=TaskHttpTests,H2TaskPersistenceTests,TaskServiceTests,TaskTests,LayerArchitectureTests,ModularityTests" test
 ```
 
-On 2026-09-28, `.\mvnw.cmd clean verify` passed all 246 tests with no failures,
+On 2026-09-28, `.\mvnw.cmd clean verify` passed all 248 tests with no failures,
 errors, or skips and packaged the executable JAR. The run used Maven 3.9.16,
 JDK 25.0.1 with Java 21 release compilation, Docker 29.8.0, and PostgreSQL 16.15
 from `postgres:16-alpine`.
 
 | Verification scope | Latest result (2026-09-28) |
 | --- | --- |
-| Full clean verification and executable JAR packaging | Passed; 246 tests |
+| Full clean verification and executable JAR packaging | Passed; 248 tests |
 | Docker-free regression tests | 218 passed within the full run |
-| PostgreSQL-backed tests | 28 passed: 9 task, 14 account, 2 application/default-security, 3 production HTTP |
+| PostgreSQL-backed tests | 30 passed: 9 task, 14 account, 2 application/default-security, 5 production HTTP/proxy |
 | Production configuration rejection tests | 26 passed |
 | Rate limiter, operational HTTP, and diagnostic tests | 10 passed |
-| Production-profile PostgreSQL and real-server tests | 3 passed |
+| Production-profile PostgreSQL and real-server tests | 5 passed |
+| Packaged JAR smoke test with PostgreSQL and verified TLS | Passed via `smoke-prod.ps1` |
 | OpenAPI contract/UI and H2 documentation access tests | 10 passed |
 | Documentation disabled by default outside H2 | Passed in the PostgreSQL application tests |
 | Task HTTP tests with signed JWTs and H2 | 44 passed |
@@ -561,10 +562,47 @@ Flyway disabled. Data is lost on shutdown. For a persistent PostgreSQL 16 instan
 set `SPRING_PROFILES_ACTIVE=postgres`, `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, and `JWT_SECRET`
 in the environment, then use the same startup command. This profile runs Flyway
 and validates the schema; it never creates/drops it through Hibernate.
-Docker Compose is not supplied yet.
+The root Compose file supplies persistent local PostgreSQL. Follow the
+[local PostgreSQL guide](../docs/local-postgres.md) for database startup, matching
+backend settings, and stopping the container without losing data.
 
 The `postgres` profile alone selects persistence settings; production safeguards
 require `SPRING_PROFILES_ACTIVE=prod`. See the [deployment runbook](../docs/deployment.md).
+
+### Test configuration and packaged verification
+
+Tests load `src/main/resources/application.properties` directly. Test-only overrides
+live in `src/test/resources/application-test.properties`; there is no shadow copy
+of the base file on the test classpath. PostgreSQL service-connection tests activate
+`test`; H2 tests activate `test,h2`; production tests activate `test,prod` so production
+settings retain mandatory rate limiting. Operational tests explicitly enable quotas.
+The signing-key fixture is a test resource and is not packaged in the JAR.
+
+After building, run `.\smoke-prod.ps1` to exercise the actual executable JAR with
+isolated PostgreSQL and certificate-verified TLS. Requires Docker Compose v2 and
+`java`, JDK `keytool`, and `curl.exe` on `PATH`. See the
+[smoke-test guide](../docs/deployment.md#packaged-production-smoke-test) for checks
+and automatic cleanup.
+
+## Remaining backend work
+
+The documented v1 account and task APIs, persistence, authorization, production
+safeguards, and operational diagnostics are implemented. Current verification is
+248 passing Maven tests plus the packaged PostgreSQL/TLS smoke test. Frontend
+integration is the next project milestone; it does not require expanding the API first.
+
+During integration, verify browser CORS, bearer-token handling, expiry and client-side
+logout, validation/permission errors, and rate-limit feedback. These end-to-end flows
+remain unverified until the frontend exists.
+
+Before public release, complete the [deployment checklist](../docs/deployment.md#public-release-checklist)
+against the real environment. Local smoke testing does not verify deployed DNS,
+proxy rules, secret delivery, backup recovery, or alert routing.
+
+Optional follow-up work includes CI running the existing verification commands and
+a review of concurrent task edits. These are not recorded as completed. Refresh
+tokens, immediate token revocation, and password recovery would require separate
+scope and contract decisions; the existing token-lifecycle limitations still apply.
 
 ## Administrator provisioning and recovery
 

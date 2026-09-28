@@ -15,7 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = {"app.rate-limit.enabled=true", "app.rate-limit.login-per-client=1",
         "app.rate-limit.register-per-client=1"})
 @AutoConfigureMockMvc
-@ActiveProfiles("h2")
+@ActiveProfiles({"test", "h2"})
 class OperationalHttpTests {
     @Autowired MockMvc mvc;
     @Autowired io.micrometer.core.instrument.MeterRegistry metrics;

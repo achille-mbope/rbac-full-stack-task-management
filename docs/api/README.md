@@ -221,13 +221,13 @@ The 44 HTTP tests cover personal/admin access, creation URLs, request validation
 updates, list filters, and audit persistence. See the
 [backend implementation sequence](../../backend/README.md#task-domain-and-next-steps).
 
-The latest `.\mvnw.cmd clean verify` run passed all 246 tests and packaged the
-executable JAR. This includes 218 Docker-free tests and 28 PostgreSQL-backed tests;
+The latest `.\mvnw.cmd clean verify` run passed all 248 tests and packaged the
+executable JAR. This includes 218 Docker-free tests and 30 PostgreSQL-backed tests;
 the nine task PostgreSQL tests verify V2 migration/constraints and audit rollback.
 The previous Docker/cache access blockers are resolved by running with the required
 process access. See the [verification notes](../../backend/README.md#run-and-verify).
 
-Before implementation is considered complete, verify schema conformance, pagination
+When changing the API, retain regression coverage for schema conformance, pagination
 and filtering, every status transition, nullable patch fields, unknown-field rejection,
 Unicode password byte limits, duplicate email handling, and empty response bodies
 for 204. Verify self-assignment and attribution spoofing rejection for USER and ADMIN.

@@ -16,7 +16,7 @@ responsibilities and straightforward development and deployment.
 - One Spring Boot deployable organized into `auth`, `user`, `task`, and
   `common` modules with boundaries defined in [ADR-0007](0007-modulith.md).
 - A separate Angular SPA communicating with the backend through REST.
-- A monorepo with `backend/`, `frontend/`, `docs/`, and a planned
+- A monorepo with `backend/`, `frontend/`, `docs/`, and a
   `docker-compose.yml` for local PostgreSQL.
 - Business modules own their entities and repositories. Cross-module access uses
   public service contracts, not another module's repositories or JPA entities.

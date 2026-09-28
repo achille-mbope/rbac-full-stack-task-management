@@ -8,6 +8,34 @@ their implementation milestone; the newest entry records current verification.
 
 ## Unreleased
 
+### Backend handoff and release documentation
+
+- Updated project and backend READMEs to distinguish completed backend work,
+  pending frontend integration, and deployment-specific release checks.
+- Corrected the delivery checklist for implemented backend scaffolding, HTTP error
+  coverage, and packaged production verification; retained unverified end-to-end
+  and fresh-checkout items.
+- Added a public release checklist covering transport, secrets, backups, request
+  limits, monitoring, dependency review, and shared limits for multiple instances.
+- Reworded API verification guidance as ongoing regression requirements and linked
+  the remaining-work guide from the documentation index. Existing verification
+  remains 248 passing tests and a successful packaged TLS smoke test.
+
+### Production verification and reproducible local PostgreSQL
+
+- Replaced the shadowing test `application.properties` with an explicitly activated
+  test profile containing only overrides; tests now inherit the main base settings.
+- Added real-server trusted-proxy tests for secure health/API access and resolved
+  client rate-limit isolation, alongside the existing untrusted-header rejection tests.
+- Added local PostgreSQL Compose with loopback binding, a persistent named volume,
+  required password, health check, environment template, and setup guide.
+- Added `backend/smoke-prod.ps1` to run the packaged production JAR with isolated
+  PostgreSQL and certificate-verified TLS, exercise registration/login and task CRUD,
+  check authorization/documentation access, and clean up its resources and secrets.
+- Verified on 2026-09-28: `clean verify` passed 248 tests (218 Docker-free and
+  30 PostgreSQL-backed), with no failures, errors, or skips. The packaged TLS smoke
+  test also passed. Actual deployment infrastructure still needs release validation.
+
 ### Production hardening, rate limiting, and diagnostics
 
 - Added a prod profile that selects PostgreSQL and rejects unsafe settings before

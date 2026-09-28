@@ -7,7 +7,7 @@ import org.springframework.test.context.ActiveProfiles;
 import static org.assertj.core.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
-@ActiveProfiles("h2")
+@ActiveProfiles({"test", "h2"})
 class H2UserModuleTests extends UserModuleContract {
 
     @Test

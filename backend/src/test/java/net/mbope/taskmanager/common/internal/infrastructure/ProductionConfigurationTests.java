@@ -24,7 +24,7 @@ class ProductionConfigurationTests {
 
     @Test
     void productionLoadsSafeProfileAndPostgresGroup() {
-        context.withPropertyValues("spring.profiles.group.prod=postgres").run(c -> {
+        context.run(c -> {
             assertThat(c).hasNotFailed();
             assertThat(c.getEnvironment().getActiveProfiles()).contains("prod", "postgres");
         });

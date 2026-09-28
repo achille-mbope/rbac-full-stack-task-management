@@ -16,8 +16,12 @@ The task domain, application use cases, persistence, and runtime wiring are impl
 Personal and administrative task HTTP endpoints and runtime OpenAPI/Swagger UI are
 implemented. Production startup safeguards, authentication rate limiting, and
 operational diagnostics are also implemented. See the [deployment guide](docs/deployment.md).
-The frontend and Docker Compose remain pending.
+Local PostgreSQL Docker Compose is available; the frontend remains pending.
 The scope below describes the full planned v1.
+
+The implemented backend is ready for frontend integration. The full Maven suite
+and local packaged production smoke test pass; validation of the actual deployment
+environment remains separate. See [remaining backend work](backend/README.md#remaining-backend-work).
 
 ## Planned Scope
 
@@ -84,7 +88,7 @@ SPA communicating over REST is planned.
 | `backend/` | Spring Boot modular monolith | Account/task HTTP APIs, JWT security, persistence, and transactional task auditing implemented |
 | `frontend/` | Angular SPA | Not scaffolded |
 | `docs/adr/` | Accepted architecture decisions | Available |
-| `docker-compose.yml` | Local PostgreSQL infrastructure | Planned |
+| `docker-compose.yml` | Local PostgreSQL infrastructure | Persistent volume, loopback port, and health check implemented |
 
 ### Backend Modules
 
@@ -121,7 +125,8 @@ stable account IDs without cross-module JPA associations.
    run during Maven verification.
 
 Runtime API documentation is implemented and compared with the checked-in contract.
-Remaining work includes local Docker Compose and the frontend.
+Local PostgreSQL Compose and packaged production smoke testing are available.
+The frontend remains pending.
 
 See the [task implementation guide](backend/README.md#task-domain-and-next-steps) for the
 implemented rules and remaining responsibilities.
@@ -144,7 +149,7 @@ and central authentication, guards, and HTTP interceptors.
 - **Quick development:** disposable H2 with Hibernate schema creation/drop and
   Flyway disabled.
 - **PostgreSQL development:** an externally supplied PostgreSQL 16 instance, Flyway
-  migrations, and Hibernate schema validation. Local Docker Compose is planned.
+  migrations, and Hibernate schema validation. See [local PostgreSQL Compose](docs/local-postgres.md).
 - **Production:** explicitly select `prod`, which includes PostgreSQL with migrations
   and validation, rejects unsafe settings, and requires secure transport. See the
   [deployment guide](docs/deployment.md); local Compose is not a production deployment plan.
@@ -266,10 +271,10 @@ Docker-dependent tests fail if Docker is unavailable.
 To run the tests that do not require Docker and build the package:
 
 ```powershell
-.\mvnw.cmd "-Dtest=*,!UserModuleTests,!TaskManagerApplicationTests,!PostgresTaskPersistenceTests,!ProductionHttpTests" clean verify
+.\mvnw.cmd "-Dtest=*,!UserModuleTests,!TaskManagerApplicationTests,!PostgresTaskPersistenceTests,!ProductionHttpTests,!ProductionTrustedProxyTests" clean verify
 ```
 
-This excludes the four PostgreSQL-dependent test classes and does not verify
+This excludes the five PostgreSQL-dependent test classes and does not verify
 PostgreSQL migrations or persistence. Run the full suite with Docker before
 treating those behaviors as verified.
 
@@ -292,7 +297,8 @@ frontend install/build commands will be needed once it is scaffolded.
 
 ## V1 Delivery Checklist
 
-- [ ] Backend and frontend scaffolded with pinned tools and dependencies.
+- [x] Backend scaffolded with pinned tools and dependencies.
+- [ ] Frontend scaffolded with pinned tools and dependencies.
 - [x] Task fields, validation, and lifecycle specified in the draft API contract.
 - [x] Task domain implemented and verified with domain and architecture tests.
 - [x] Task application use cases and authorization verified independently of persistence.
@@ -306,18 +312,24 @@ frontend install/build commands will be needed once it is scaffolded.
 - [x] Disabled-account login and the accepted stale-token behavior verified.
 - [x] Module verification is included in Maven tests and passes in the focused run.
 - [x] Verify the current revision against PostgreSQL, including V2 migration and task transaction behavior.
-- [ ] Validation, 401, 403, and ownership-related 404 errors follow the API contract.
+- [x] Backend validation, 401, 403, and ownership-related 404 errors verified through HTTP tests.
 - [ ] Frontend login, task list, forms, and filters work with the backend.
-- [ ] Local Compose starts PostgreSQL; application startup is documented separately.
+- [x] Local Compose starts PostgreSQL; application startup is documented separately.
 - [x] Development API documentation is available; production access is disabled by default.
 - [x] Production configuration checks, authentication quotas, and health/request diagnostics are implemented.
+- [x] Packaged production JAR verified with PostgreSQL and certificate-verified TLS.
+- [ ] Frontend/backend flows verified together through the browser.
+- [ ] Actual deployment transport, backups, limits, and monitoring verified before public release.
 - [ ] Setup and verification instructions are reproducible from a fresh checkout.
 
-Latest verification (2026-09-28): `.\mvnw.cmd clean verify` passed all 246 tests
-and built the executable JAR. This includes 218 Docker-free tests and 28 PostgreSQL-backed
+Latest verification (2026-09-28): `.\mvnw.cmd clean verify` passed all 248 tests
+and built the executable JAR. This includes 218 Docker-free tests and 30 PostgreSQL-backed
 tests, including V2 migration/constraint checks and transactional task audit rollback.
 The earlier Docker and Maven-cache failures were restricted-process access errors;
 the normal Maven build succeeds with access to Docker and the dependency cache.
+
+The [packaged production smoke test](docs/deployment.md#packaged-production-smoke-test)
+also passed against isolated PostgreSQL over certificate-verified TLS.
 
 CI configuration is outside v1 scope. Local verification is required; future CI
 must run the same checks.

@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {"server.forward-headers-strategy=native",
         "server.tomcat.remoteip.internal-proxies=192[.]0[.]2[.]10"})
 @AutoConfigureMockMvc
-@ActiveProfiles("prod")
+@ActiveProfiles({"test", "prod"})
 class ProductionHttpTests {
     @Container static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
     @DynamicPropertySource

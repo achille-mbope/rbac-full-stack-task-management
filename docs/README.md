@@ -7,6 +7,7 @@
 | [API guide](api/README.md) | Request/response rules, task lifecycle, Problem Details, and runtime documentation |
 | [OpenAPI contract](api/openapi.json) | Checked-in machine-readable API contract compared with runtime documentation in tests |
 | [Production deployment](deployment.md) | Production profile, TLS/proxy trust, request limits, health, diagnostics, and release checks |
+| [Local PostgreSQL](local-postgres.md) | Docker Compose startup, persistent data, backend connection settings, and cleanup |
 | [Changelog](../CHANGELOG.md) | Implementation milestones and recorded verification results |
 
 ## Architecture decisions
@@ -21,4 +22,13 @@
 
 Start with the project README for disposable H2 development. Use the deployment
 guide for `prod`; selecting `postgres` alone does not enable production safeguards.
-The Angular frontend and local Docker Compose configuration remain planned.
+Local PostgreSQL Compose and a packaged production smoke script are available.
+The Angular frontend remains planned.
+
+## Current handoff
+
+The backend is ready for frontend integration, with 248 passing tests and a successful
+packaged PostgreSQL/TLS smoke run recorded on 2026-09-28. See
+[remaining backend work](../backend/README.md#remaining-backend-work) for integration
+checks and optional follow-ups. The [public release checklist](deployment.md#public-release-checklist)
+tracks deployment-specific validation that local tests do not cover.

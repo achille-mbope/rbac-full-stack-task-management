@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(properties = "app.api-docs.enabled=false")
 @AutoConfigureMockMvc
-@ActiveProfiles("h2")
+@ActiveProfiles({"test", "h2"})
 class OpenApiDisabledTests {
     @Autowired MockMvc mvc;
     @Autowired ApplicationContext context;

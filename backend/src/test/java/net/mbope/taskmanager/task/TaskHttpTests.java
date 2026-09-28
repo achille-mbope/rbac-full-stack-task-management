@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("h2")
+@ActiveProfiles({"test", "h2"})
 class TaskHttpTests {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper json;

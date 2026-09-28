@@ -33,10 +33,11 @@ rows have no task foreign key so deletion history survives. H2 creates the entit
 schema through Hibernate and does not run these migrations. H2 persistence and
 rollback tests pass. PostgreSQL 16.15 tests also pass: Flyway applies V1/V2, Hibernate
 validates the schema, and integration tests cover constraints, filtering, and audit
-rollback. Local Compose remains planned.
+rollback. Local Compose now supplies PostgreSQL with a persistent named volume,
+loopback-only published port, required password, and health check.
 
 The `prod` profile and startup checks are implemented. PostgreSQL development uses
-an externally supplied database until Compose is added. Selecting `postgres` alone
+the [local Compose setup](../local-postgres.md) or an externally supplied database. Selecting `postgres` alone
 does not activate production checks. See the [deployment guide](../deployment.md)
 for transport, secrets, migration rollout, and operational requirements.
 

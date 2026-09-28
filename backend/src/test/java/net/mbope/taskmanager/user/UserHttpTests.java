@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("h2")
+@ActiveProfiles({"test", "h2"})
 class UserHttpTests {
     private static final String PASSWORD = "a long original password";
     @Autowired
