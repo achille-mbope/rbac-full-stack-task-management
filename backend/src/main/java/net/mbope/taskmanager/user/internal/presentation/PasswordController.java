@@ -1,5 +1,9 @@
 package net.mbope.taskmanager.user.internal.presentation;
 
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+
+import io.swagger.v3.oas.annotations.Operation;
+
 import net.mbope.taskmanager.user.UserCredentials;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +22,8 @@ class PasswordController {
     }
 
     @PutMapping(path = "/password", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "changePassword")
+    @ApiResponse(responseCode = "204")
     ResponseEntity<Void> changePassword(@RequestBody ChangePasswordRequest request) {
         credentials.changePassword(request.currentPassword(), request.newPassword());
         return ResponseEntity.noContent().build();

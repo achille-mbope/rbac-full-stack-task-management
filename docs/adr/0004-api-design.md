@@ -41,7 +41,9 @@ Account endpoints and Problem Details handling are implemented. Task domain and
 application contracts support CRUD, assignment/access rules, field-presence-aware
 updates, and query validation. Personal/admin task HTTP controllers, request/response
 DTOs, and exception-to-response mapping now implement the OpenAPI contract.
-Runtime OpenAPI/Swagger UI also remains pending. See the
+Runtime OpenAPI 3.1 and Swagger UI are implemented with springdoc-openapi 2.8.17.
+Generated operations, wire schemas, errors, headers, and security are compared with
+the independent checked-in contract during Maven tests. See the
 [API implementation notes](../api/README.md#implementation-verification).
 
 ## Rationale
@@ -61,8 +63,12 @@ handling without depending on exception text. OpenAPI makes contracts reviewable
   Security filter errors and MVC exception-handler responses.
 - Frontend code must tolerate infrastructure errors outside this contract.
 - Never expose stack traces, SQL, credentials, or internal exception messages.
-- Add `springdoc-openapi-starter-webmvc-ui`. Expose `/swagger-ui.html` in
-  development and disable or restrict documentation endpoints in production.
+- Use `springdoc-openapi-starter-webmvc-ui`. The local H2 profile exposes
+  `/swagger-ui.html`, `/v3/api-docs`, and `/v3/api-docs.yaml` publicly. Other
+  profiles disable them by default. `API_DOCS_ENABLED` controls generation and
+  security: false denies all documentation routes to every role; true explicitly
+  makes documentation public. Keep it false on deployed hosts. Swagger UI does
+  not persist bearer authorization across reloads.
 - Verify validation, 401, 403, and ownership-related 404 responses.
 
 ## References

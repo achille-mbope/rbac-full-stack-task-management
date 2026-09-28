@@ -3,10 +3,29 @@
 Notable project changes are recorded here, newest first. The project has no tagged
 releases. Account HTTP endpoints and JWT authentication are implemented, along with
 task domain, application logic, persistence, transactional audit wiring, and HTTP
-endpoints. The frontend remains planned. Older entries describe the state at
+endpoints and runtime OpenAPI/Swagger UI. The frontend remains planned. Older entries describe the state at
 their implementation milestone; the newest entry records current verification.
 
 ## Unreleased
+
+### Runtime OpenAPI and Swagger UI
+
+- Added springdoc-openapi 2.8.17 with generated OpenAPI 3.1 JSON/YAML and Swagger UI.
+- Documented all account/task operations, bearer authentication, ADMIN requirements,
+  domain validation, nullable PATCH fields, Problem Details, and response headers.
+- Enabled public documentation for local H2 development; disabled it by default
+  elsewhere. `API_DOCS_ENABLED` controls availability, with disabled routes denied
+  even to administrators. Swagger UI does not persist bearer tokens.
+- Added independent comparison of all 16 operations with the checked-in contract,
+  UI/configuration checks, and enabled/disabled documentation security tests.
+  Generated JSON is written to `backend/target/openapi.json` for review.
+- Updated README files, API documentation, and API/security ADRs with documentation
+  URLs, profile/override access rules, bearer-token usage, metadata ownership, and
+  the contract maintenance workflow. Recorded the focused documentation checks
+  alongside full-build verification results.
+- Full `clean verify` passed 207 tests (182 Docker-free and 25 PostgreSQL-backed),
+  with no failures, errors, or skips; the executable JAR was packaged.
+
 
 ### PostgreSQL verification
 

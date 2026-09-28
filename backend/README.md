@@ -6,7 +6,8 @@ The backend uses Java 21, Spring Boot 3.5.16, Spring Modulith 1.4.13, and the co
 
 The `user` module implements account services, persistence, and account HTTP adapters.
 The `auth` module implements login, JWT issuance/validation, and stateless HTTP security.
-The `common` module provides consistent Problem Details responses and a shared clock.
+The `common` module provides consistent Problem Details responses, a shared clock,
+and runtime OpenAPI metadata.
 The `task` module now contains its framework-independent domain: immutable assignee
 and creator IDs, title/description validation by Unicode code points, optional due
 dates, and TODO/IN_PROGRESS/DONE status changes (including reopening). New tasks
@@ -14,7 +15,7 @@ default to TODO; all editable fields are validated before an update changes stat
 Task application services now implement personal and administrative use cases,
 assignment validation, and authorization through ports. JPA persistence, principal/audit
 adapters, transactional Spring wiring, and personal/admin HTTP adapters are implemented.
-The Angular UI and runtime OpenAPI/Swagger UI remain pending.
+Runtime OpenAPI/Swagger UI is implemented. The Angular UI remains pending.
 
 ## HTTP endpoints
 
@@ -38,6 +39,70 @@ Unknown JSON fields are rejected, including roles supplied during registration.
 All controlled errors, including authentication and CORS failures, use
 `application/problem+json`. Invalid login responses do not reveal account status.
 
+## Runtime OpenAPI and Swagger UI
+
+The backend uses springdoc-openapi 2.8.17 to generate OpenAPI 3.1 from controllers
+and DTOs, supplemented with application/domain constraints and Problem Details
+metadata. The checked-in [contract](../docs/api/openapi.json) is an independent
+test input; it is not served or bundled as the runtime specification.
+
+| Resource | URL |
+| --- | --- |
+| Swagger UI | `http://localhost:8080/swagger-ui.html` |
+| JSON specification | `http://localhost:8080/v3/api-docs` |
+| YAML specification | `http://localhost:8080/v3/api-docs.yaml` |
+
+The local `h2` profile enables documentation by default. Other profiles, including
+`postgres`, disable it. Set `API_DOCS_ENABLED=false` to disable it in H2 too.
+
+| Profile / override | Documentation access |
+| --- | --- |
+| Local `h2`, no override | Public |
+| `postgres` or another profile, no override | Disabled |
+| Any profile with `API_DOCS_ENABLED=false` | Disabled |
+| Any profile with `API_DOCS_ENABLED=true` | Public |
+
+Setting `API_DOCS_ENABLED=true` explicitly enables **public** documentation in any
+profile; keep it disabled on deployed hosts. Configure this switch rather than
+individual springdoc flags. Disabled resources are not registered, and security
+also denies their JSON, YAML, configuration, UI, and asset URLs to every role
+(anonymous requests receive 401; authenticated requests receive 403).
+
+In Swagger UI, register and log in, copy `accessToken`, click **Authorize**, and
+paste the JWT without the `Bearer` prefix. Authorization is held in memory and
+is not persisted across page reloads. Registration and login remain public;
+protected operations require the token and administrative operations require ADMIN.
+Try-it-out requests execute real operations against the running database.
+
+Run documentation checks from `backend/` without Docker:
+
+```powershell
+.\mvnw.cmd "-Dtest=OpenApiTests,OpenApiDisabledTests" test
+```
+
+`OpenApiTests` compares all 16 generated operations against the contract: effective
+paths/methods, operation IDs, parameters, request/response schemas and constraints,
+status codes, media types, headers, bearer security, and ADMIN role metadata. It
+normalizes references, ordering, integer formats, and descriptive text; nullable
+PATCH fields and unknown-property rejection remain part of the comparison. The
+generated JSON is saved to `backend/target/openapi.json` for review. Tests also
+exercise UI assets/configuration and disabled access; the full Docker suite checks
+the disabled default in the PostgreSQL application context.
+
+### Maintaining the API documentation
+
+Controller annotations define operation IDs and success responses; presentation DTO
+annotations define wire-schema names. `common/internal/infrastructure/OpenApiConfiguration`
+adds domain-enforced constraints, shared errors, headers, and security metadata.
+`auth/internal/infrastructure/HttpSecurityConfiguration` enforces documentation access.
+Domain and application code remain independent of springdoc.
+
+When an API changes, update the controllers/DTOs, runtime metadata where needed, and
+`docs/api/openapi.json` together. Run the focused documentation tests above and review
+`target/openapi.json`; resolve differences before running full `clean verify`.
+Do not edit the generated file: the next test run overwrites it. The comparison
+checks documented shapes; HTTP and persistence tests verify actual behavior.
+
 ## Test registration and login with Postman
 
 Start the backend from the repository root in PowerShell (Java 21+ required):
@@ -50,7 +115,7 @@ cd backend
 
 Run setup once per checkout, then leave the backend running while sending requests.
 The default H2 profile needs no Docker or separate database. These requests use
-`http://localhost:8080`; the frontend and Swagger UI are not implemented yet.
+`http://localhost:8080`; Swagger UI is available at `/swagger-ui.html`. The frontend remains planned.
 
 ### Register an account
 
@@ -415,16 +480,18 @@ For focused task HTTP, persistence, application, domain, and architecture verifi
 .\mvnw.cmd "-Dtest=TaskHttpTests,H2TaskPersistenceTests,TaskServiceTests,TaskTests,LayerArchitectureTests,ModularityTests" test
 ```
 
-On 2026-09-27, `.\mvnw.cmd clean verify` passed all 196 tests with no failures,
+On 2026-09-27, `.\mvnw.cmd clean verify` passed all 207 tests with no failures,
 errors, or skips and packaged the executable JAR. The run used Maven 3.9.16,
 JDK 25.0.1 with Java 21 release compilation, Docker 29.8.0, and PostgreSQL 16.15
 from `postgres:16-alpine`.
 
 | Verification scope | Latest result (2026-09-27) |
 | --- | --- |
-| Full clean verification and executable JAR packaging | Passed; 196 tests |
-| Docker-free regression tests | 172 passed within the full run |
-| PostgreSQL-backed tests | 24 passed: 9 task, 14 account, 1 application startup |
+| Full clean verification and executable JAR packaging | Passed; 207 tests |
+| Docker-free regression tests | 182 passed within the full run |
+| PostgreSQL-backed tests | 25 passed: 9 task, 14 account, 2 application/default-security |
+| OpenAPI contract/UI and H2 documentation access tests | 10 passed |
+| Documentation disabled by default outside H2 | Passed in the PostgreSQL application tests |
 | Task HTTP tests with signed JWTs and H2 | 44 passed |
 | Task H2 persistence and transaction tests | 8 passed |
 

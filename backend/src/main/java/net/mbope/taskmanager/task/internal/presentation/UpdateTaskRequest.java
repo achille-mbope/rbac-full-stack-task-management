@@ -1,5 +1,7 @@
 package net.mbope.taskmanager.task.internal.presentation;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import com.fasterxml.jackson.annotation.JsonSetter;
 import net.mbope.taskmanager.task.FieldChange;
 import net.mbope.taskmanager.task.TaskStatus;
@@ -12,21 +14,25 @@ final class UpdateTaskRequest {
     private FieldChange<TaskStatus> status = FieldChange.unchanged();
     private FieldChange<String> dueDate = FieldChange.unchanged();
 
+    @Schema(implementation = String.class)
     @JsonSetter("title")
     public void setTitle(String value) {
         title = FieldChange.set(value);
     }
 
+    @Schema(implementation = String.class)
     @JsonSetter("description")
     public void setDescription(String value) {
         description = FieldChange.set(value);
     }
 
+    @Schema(implementation = TaskStatus.class)
     @JsonSetter("status")
     public void setStatus(TaskStatus value) {
         status = FieldChange.set(value);
     }
 
+    @Schema(implementation = String.class)
     @JsonSetter("dueDate")
     public void setDueDate(String value) {
         dueDate = FieldChange.set(value);

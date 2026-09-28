@@ -117,3 +117,12 @@ input and cost constraints.
 
 - [OWASP authentication](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html)
 - [OWASP password storage](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
+
+## Runtime API documentation
+
+Documentation is public by default only in the local H2 profile. Other profiles
+disable it; `API_DOCS_ENABLED=true` explicitly makes it public. Deployed hosts
+should retain the disabled default. Security denies documentation and Swagger
+asset routes to every role when disabled, in addition to disabling generation
+and UI registration. Swagger UI keeps authorization in memory, without persisting
+tokens across reloads. API authentication and ADMIN requirements remain enforced.

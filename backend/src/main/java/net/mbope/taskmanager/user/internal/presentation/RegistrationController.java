@@ -1,5 +1,9 @@
 package net.mbope.taskmanager.user.internal.presentation;
 
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+
+import io.swagger.v3.oas.annotations.Operation;
+
 import net.mbope.taskmanager.user.Account;
 import net.mbope.taskmanager.user.AccountRegistration;
 import org.springframework.http.HttpStatus;
@@ -20,6 +24,8 @@ class RegistrationController {
     }
 
     @PostMapping(path = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "register")
+    @ApiResponse(responseCode = "201", useReturnTypeSchema = true)
     ResponseEntity<Account> register(@RequestBody RegisterRequest request) {
         Account account = registration.register(request.email(), request.password());
         return ResponseEntity.status(HttpStatus.CREATED).body(account);

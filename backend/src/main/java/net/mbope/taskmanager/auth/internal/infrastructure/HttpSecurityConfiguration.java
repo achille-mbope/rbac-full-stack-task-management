@@ -1,6 +1,9 @@
 package net.mbope.taskmanager.auth.internal.infrastructure;
 
+import org.springframework.security.authorization.AuthorizationDecision;
+
 import jakarta.servlet.DispatcherType;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,7 +18,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 class HttpSecurityConfiguration {
     @Bean
-    SecurityFilterChain apiSecurity(HttpSecurity http, SecurityProblemHandlers problems, CorsPolicy cors) throws Exception {
+    SecurityFilterChain apiSecurity(HttpSecurity http, SecurityProblemHandlers problems, CorsPolicy cors,
+            @Value("${app.api-docs.enabled:false}") boolean docsEnabled) throws Exception {
         http.csrf(config -> config.disable())
                 .sessionManagement(config -> config.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .requestCache(config -> config.disable())
@@ -25,6 +29,9 @@ class HttpSecurityConfiguration {
                 .addFilterBefore(cors.filter(), UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(config -> config
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                        .requestMatchers("/v3/api-docs", "/v3/api-docs/**", "/v3/api-docs.yaml",
+                                "/swagger-ui.html", "/swagger-ui/**", "/webjars/swagger-ui/**")
+                        .access((authentication, context) -> new AuthorizationDecision(docsEnabled))
                         .requestMatchers("/api/v1/auth/register", "/api/v1/auth/login").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())

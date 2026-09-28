@@ -1,5 +1,9 @@
 package net.mbope.taskmanager.task.internal.presentation;
 
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+
+import io.swagger.v3.oas.annotations.Operation;
+
 import java.net.URI;
 import java.util.UUID;
 import net.mbope.taskmanager.task.TaskAdministration;
@@ -20,17 +24,21 @@ class TaskAdministrationController {
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "createAssignedTask")
+    @ApiResponse(responseCode = "201", useReturnTypeSchema = true)
     ResponseEntity<TaskResponse> create(@RequestBody AssignTaskRequest request) {
         var task = tasks.create(request.assigneeId(), request.draft());
         return ResponseEntity.created(URI.create("/api/v1/admin/tasks/" + task.id())).body(TaskResponse.from(task));
     }
 
     @GetMapping("/{taskId}")
+    @Operation(operationId = "getAnyTask")
     TaskResponse get(@PathVariable UUID taskId) {
         return TaskResponse.from(tasks.get(taskId));
     }
 
     @GetMapping
+    @Operation(operationId = "listAllTasks")
     TaskPageResponse list(@RequestParam(defaultValue = "0") int page,
                           @RequestParam(defaultValue = "20") int size,
                           @RequestParam(required = false) TaskStatus status,
@@ -40,12 +48,14 @@ class TaskAdministrationController {
     }
 
     @PatchMapping(path = "/{taskId}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "updateAnyTask")
     TaskResponse update(@PathVariable UUID taskId, @RequestBody UpdateTaskRequest request) {
         return TaskResponse.from(tasks.update(taskId, request.update()));
     }
 
     @DeleteMapping("/{taskId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(operationId = "deleteAnyTask")
     void delete(@PathVariable UUID taskId) {
         tasks.delete(taskId);
     }

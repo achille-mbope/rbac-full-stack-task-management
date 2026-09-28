@@ -6,8 +6,8 @@ administrator account operations are implemented in the backend. The task domain
 implements field validation, immutable attribution, and status changes. Application
 use cases implement assignment, access rules, and partial updates through ports.
 Task persistence and runtime wiring are implemented with H2 integration coverage.
-Task HTTP operations are implemented; runtime-generated OpenAPI and Swagger UI
-are not yet available.
+Task HTTP operations and runtime-generated OpenAPI/Swagger UI are implemented.
+The runtime specification is compared with this independent contract by `OpenApiTests`.
 Import it into an OpenAPI 3.1-compatible viewer or client generator.
 
 For manual testing of the implemented authentication endpoints, follow the
@@ -21,6 +21,7 @@ responses. For task requests, see the [task API walkthrough](../../backend/READM
 | JPA storage, principal adapter, and transactional audit wiring | Implemented; H2 and PostgreSQL integration tests pass |
 | PostgreSQL migration and persistence verification | Nine task tests pass against PostgreSQL 16.15, including V2 constraints and audit rollback |
 | HTTP controllers, JSON update handling, and error mapping | Implemented for personal and admin routes |
+| Runtime OpenAPI and Swagger UI | Available in local H2 development; disabled by default elsewhere |
 
 The HTTP implementation uses separate personal/admin creation DTOs. Personal creation
 never accepts attribution fields; admin creation accepts only `assigneeId` in addition
@@ -29,6 +30,27 @@ and explicit null clears only description or dueDate. Due dates use YYYY-MM-DD s
 Both task and paginated responses have dedicated HTTP DTOs. See
 [TaskHttpTests](../../backend/src/test/java/net/mbope/taskmanager/task/TaskHttpTests.java)
 for executable request/response examples and authorization checks.
+
+## Runtime documentation and contract comparison
+
+See the [runtime documentation guide](../../backend/README.md#runtime-openapi-and-swagger-ui)
+for URLs, bearer-token entry, availability controls, and focused test commands.
+`API_DOCS_ENABLED=true` makes documentation public; leave it disabled on deployed hosts.
+
+The generated document uses server `/` and full `/api/v1/...` paths; this contract
+uses server `/api/v1` and relative paths. Tests compare effective URLs, expand
+references, and ignore descriptive text, ordering, redundant `required: false`,
+integer formats, and explicit null defaults. They retain request/response property
+names, requiredness, nullability, validation constraints, error media types, response
+headers, security, and ADMIN role metadata. All 16 operations match. PATCH schemas
+describe wire fields rather than the internal field-presence wrapper. Runtime DTO
+schema names are aligned with the contract. `backend/target/openapi.json` is the
+generated review artifact; the static contract is copied only to test resources.
+
+For intentional API changes, update this contract and runtime declarations together,
+then run `OpenApiTests` and `OpenApiDisabledTests` as described in the backend guide.
+Keep behavior tests for validation, authorization, and persistence: matching OpenAPI
+documents alone does not prove the implementation follows the documented behavior.
 
 ## Scope and design choices
 
@@ -181,8 +203,8 @@ The 44 HTTP tests cover personal/admin access, creation URLs, request validation
 updates, list filters, and audit persistence. See the
 [backend implementation sequence](../../backend/README.md#task-domain-and-next-steps).
 
-The latest `.\mvnw.cmd clean verify` run passed all 196 tests and packaged the
-executable JAR. This includes 172 Docker-free tests and 24 PostgreSQL-backed tests;
+The latest `.\mvnw.cmd clean verify` run passed all 207 tests and packaged the
+executable JAR. This includes 182 Docker-free tests and 25 PostgreSQL-backed tests;
 the nine task PostgreSQL tests verify V2 migration/constraints and audit rollback.
 The previous Docker/cache access blockers are resolved by running with the required
 process access. See the [verification notes](../../backend/README.md#run-and-verify).
@@ -198,5 +220,5 @@ Location URLs accessible to creators, and transactional admin mutation audit rec
 Verify assignment to USER and ADMIN recipients, missing/disabled recipients,
 non-admin assignment rejection before recipient lookup, immutable attribution fields,
 registration role escalation rejection, ADMIN checks, generic login failures,
-disabled-account login rejection, and the accepted stale-token behavior. Generate
-runtime OpenAPI documentation and compare it with this contract to prevent drift.
+disabled-account login rejection, and the accepted stale-token behavior. Runtime
+OpenAPI comparison now runs in the Maven test suite to detect contract drift.

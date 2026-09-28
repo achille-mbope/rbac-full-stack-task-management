@@ -1,5 +1,7 @@
 package net.mbope.taskmanager.auth.internal.presentation;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import net.mbope.taskmanager.auth.internal.application.LoginService;
 import net.mbope.taskmanager.auth.internal.application.TokenResponse;
 import org.springframework.http.CacheControl;
@@ -20,6 +22,7 @@ class LoginController {
     }
 
     @PostMapping(path = "/login", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "login")
     ResponseEntity<TokenResponse> login(@RequestBody LoginRequest request) {
         TokenResponse token = loginService.login(request.email(), request.password());
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(token);

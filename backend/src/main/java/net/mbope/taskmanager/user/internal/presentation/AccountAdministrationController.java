@@ -1,5 +1,7 @@
 package net.mbope.taskmanager.user.internal.presentation;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import jakarta.validation.Valid;
 
 import java.util.UUID;
@@ -26,16 +28,19 @@ class AccountAdministrationController {
     }
 
     @GetMapping
+    @Operation(operationId = "listAccounts")
     AccountPage list(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
         return administration.list(page, size);
     }
 
     @PutMapping(path = "/{userId}/roles", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "replaceAccountRoles")
     Account replaceRoles(@PathVariable UUID userId, @Valid @RequestBody ReplaceRolesRequest request) {
         return administration.replaceRoles(userId, request.uniqueRoles());
     }
 
     @PutMapping(path = "/{userId}/status", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "setAccountEnabled")
     Account setEnabled(@PathVariable UUID userId, @Valid @RequestBody AccountStatusRequest request) {
         return administration.setEnabled(userId, request.enabled());
     }

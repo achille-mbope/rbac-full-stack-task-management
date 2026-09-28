@@ -11,8 +11,8 @@ See the [changelog](CHANGELOG.md) for the latest project changes.
 are present. The `user` and `auth` modules provide account REST endpoints, persistence,
 and JWT authentication. See [backend setup and module API](backend/README.md).
 The task domain, application use cases, persistence, and runtime wiring are implemented.
-Personal and administrative task HTTP endpoints are implemented. The frontend,
-runtime OpenAPI/Swagger UI, and Docker Compose remain pending.
+Personal and administrative task HTTP endpoints and runtime OpenAPI/Swagger UI are
+implemented. The frontend and Docker Compose remain pending.
 The scope below describes the full planned v1.
 
 ## Planned Scope
@@ -64,6 +64,7 @@ Frontend guards remain planned. See
 | Persistent database | PostgreSQL 16 |
 | Schema migrations | Flyway |
 | Authentication | HS256 JWT bearer tokens |
+| Runtime API documentation | OpenAPI 3.1 and Swagger UI through springdoc |
 
 Backend versions are pinned in its POM and Maven Wrapper. Frontend versions remain
 to be pinned. Version selection and maintenance requirements are defined in
@@ -88,7 +89,7 @@ SPA communicating over REST is planned.
 | `auth` | Login, tokens, HTTP security configuration | `user`, `common` |
 | `user` | Accounts, credentials, roles, account administration | `common` |
 | `task` | Task lifecycle, assignment, and access enforcement | `user`, `common` |
-| `common` | Small domain-neutral shared types and utilities | None |
+| `common` | Shared utilities, Problem Details, and runtime OpenAPI metadata | None |
 
 The `auth`, `user`, and `common` modules are implemented and closed; `task` is a
 closed module with domain, application logic, persistence, HTTP, and principal/audit adapters
@@ -111,8 +112,12 @@ stable account IDs without cross-module JPA associations.
    migration/integration tests pass, including audit rollback and deletion history.
 4. **Implemented: HTTP API.** Personal/admin controllers, request/response DTOs,
    partial-update handling, and Problem Details mapping are in place.
+5. **Implemented: runtime API documentation.** Swagger UI and generated JSON/YAML
+   describe all 16 operations. Contract comparison and documentation access tests
+   run during Maven verification.
 
-Remaining work includes runtime API documentation, local Docker Compose, and the frontend.
+Runtime API documentation is implemented and compared with the checked-in contract.
+Remaining work includes local Docker Compose and the frontend.
 
 See the [task implementation guide](backend/README.md#task-domain-and-next-steps) for the
 implemented rules and remaining responsibilities.
@@ -151,14 +156,18 @@ for task lifecycle rules, implemented HTTP behavior, and verification limits.
 Task request examples are available in the [HTTP walkthrough](backend/README.md#try-the-task-api).
 
 The implemented account and task APIs use REST and JSON under `/api/v1`, with RFC 9457 Problem
-Details errors (`application/problem+json`). OpenAPI will document operations,
-schemas, and bearer authentication. Swagger UI is planned at
-`/swagger-ui.html` in development.
+Details errors (`application/problem+json`). Runtime OpenAPI 3.1 is available at
+`/v3/api-docs` (JSON) and `/v3/api-docs.yaml`; Swagger UI is at `/swagger-ui.html`.
+Documentation is public in local H2 development and disabled by default elsewhere.
+`API_DOCS_ENABLED=false` disables it locally; setting it to `true` explicitly makes
+it public in another profile. Keep it disabled on deployed hosts. See the
+[runtime documentation guide](backend/README.md#runtime-openapi-and-swagger-ui).
 
 HTTP security is configured by
 [`HttpSecurityConfiguration`](backend/src/main/java/net/mbope/taskmanager/auth/internal/infrastructure/HttpSecurityConfiguration.java)
 for servlet web applications. Registration and login are public; `/api/v1/admin/**`
-requires ADMIN, and all other routes require authentication. JWT `roles` map to
+requires ADMIN, and API routes otherwise require authentication. Documentation routes
+are public only when enabled and denied to every role when disabled. JWT `roles` map to
 Spring Security authorities with the `ROLE_` prefix. The filter chain is stateless,
 with request caching, CSRF, form login, HTTP Basic, and server-side logout disabled.
 See the [backend security guide](backend/README.md#security-and-http-code-ownership)
@@ -212,8 +221,8 @@ existing file. On subsequent starts, run only `.\mvnw.cmd spring-boot:run` from
 
 The default `h2` profile starts the API at `http://localhost:8080` without Docker
 or a separate database. H2 data is lost when the application stops. Press `Ctrl+C`
-to stop it. The frontend and Swagger UI are not implemented yet; an unauthenticated
-request to `/` returns 401 because that route is protected.
+to stop it. Open `http://localhost:8080/swagger-ui.html` to explore the API.
+The frontend is not implemented yet; an unauthenticated request to `/` returns 401.
 
 On Unix, run `pwsh ./setup-local.ps1` if PowerShell is installed, then
 `./mvnw spring-boot:run`, both from `backend/`. Alternatively, supply an external
@@ -292,11 +301,11 @@ frontend install/build commands will be needed once it is scaffolded.
 - [ ] Validation, 401, 403, and ownership-related 404 errors follow the API contract.
 - [ ] Frontend login, task list, forms, and filters work with the backend.
 - [ ] Local Compose starts PostgreSQL; application startup is documented separately.
-- [ ] Development API documentation is available; production access is restricted.
+- [x] Development API documentation is available; production access is disabled by default.
 - [ ] Setup and verification instructions are reproducible from a fresh checkout.
 
-Latest verification (2026-09-27): `.\mvnw.cmd clean verify` passed all 196 tests
-and built the executable JAR. This includes 172 Docker-free tests and 24 PostgreSQL-backed
+Latest verification (2026-09-27): `.\mvnw.cmd clean verify` passed all 207 tests
+and built the executable JAR. This includes 182 Docker-free tests and 25 PostgreSQL-backed
 tests, including V2 migration/constraint checks and transactional task audit rollback.
 The earlier Docker and Maven-cache failures were restricted-process access errors;
 the normal Maven build succeeds with access to Docker and the dependency cache.
