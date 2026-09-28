@@ -507,6 +507,9 @@ rate-limit tuning and scaling limits, health checks, diagnostics, and release ch
 
 ## Run and verify
 
+The [database schema guide](../docs/database.md) describes tables, relationships,
+indexes, migration ownership, and H2/PostgreSQL differences.
+
 From `backend/`, with Java 21+ and Docker running:
 
 ```powershell

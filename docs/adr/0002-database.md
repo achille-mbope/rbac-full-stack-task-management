@@ -27,6 +27,9 @@ We need disposable local runs and realistic verification of persistence and migr
 
 ## Implementation status (2026-09-28)
 
+The [database schema guide](../database.md) documents the physical relationships,
+constraints, indexes, and transactional audit behavior derived from the migrations.
+
 V1 creates accounts; V2 adds tasks and administrative audit storage. Tasks reference
 accounts by scalar UUID foreign keys without cross-module JPA associations. Audit
 rows have no task foreign key so deletion history survives. H2 creates the entity

@@ -158,6 +158,9 @@ and central authentication, guards, and HTTP interceptors.
 
 ## Database Profiles
 
+See the [database schema guide](docs/database.md) for the ER diagram, constraints,
+indexes, and transactional audit behavior.
+
 - **Quick development:** disposable H2 with Hibernate schema creation/drop and
   Flyway disabled.
 - **PostgreSQL development:** an externally supplied PostgreSQL 16 instance, Flyway

@@ -8,6 +8,7 @@
 | [OpenAPI contract](api/openapi.json) | Checked-in machine-readable API contract compared with runtime documentation in tests |
 | [Production deployment](deployment.md) | Production profile, TLS/proxy trust, request limits, health, diagnostics, and release checks |
 | [Local PostgreSQL](local-postgres.md) | Docker Compose startup, persistent data, backend connection settings, and cleanup |
+| [Database schema](database.md) | ER diagram, table ownership, constraints, indexes, auditing, migrations, and database profiles |
 | [Changelog](../CHANGELOG.md) | Implementation milestones and recorded verification results |
 
 ## Architecture decisions

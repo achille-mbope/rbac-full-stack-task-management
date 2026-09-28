@@ -8,6 +8,15 @@ their implementation milestone; the newest entry records current verification.
 
 ## Unreleased
 
+### Database documentation
+
+- Added a database guide derived from Flyway V1/V2 and persistence adapters, with a
+  Mermaid ER diagram, table ownership, constraints, indexes, and query behavior.
+- Documented scalar account references, audit IDs without foreign keys, deletion
+  behavior, shared task/audit transactions, and database versus application rules.
+- Linked migration/profile guidance and verification commands to existing setup
+  and deployment runbooks, and added the guide to the documentation index and READMEs.
+
 ### Architecture diagrams
 
 - Added Mermaid diagrams for allowed backend module dependencies, task request
