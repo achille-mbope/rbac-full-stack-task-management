@@ -1,8 +1,57 @@
 # API Contract
 
 [openapi.json](openapi.json) is the OpenAPI 3.1 contract for the planned v1 API.
-Its version is `0.1.0-draft`; it describes intended behavior, not a deployed API.
+Its version is `0.1.0-draft`. Account registration, login, password changes, and
+administrator account operations are implemented in the backend. The task domain
+implements field validation, immutable attribution, and status changes. Application
+use cases implement assignment, access rules, and partial updates through ports.
+Task persistence and runtime wiring are implemented with H2 integration coverage.
+Task HTTP operations and runtime-generated OpenAPI/Swagger UI are implemented.
+The runtime specification is compared with this independent contract by `OpenApiTests`.
 Import it into an OpenAPI 3.1-compatible viewer or client generator.
+
+For manual testing of the implemented authentication endpoints, follow the
+[Postman registration and login walkthrough](../../backend/README.md#test-registration-and-login-with-postman).
+It covers local startup, JSON bodies, bearer tokens, and expected success and error
+responses. For task requests, see the [task API walkthrough](../../backend/README.md#try-the-task-api).
+
+| Task implementation layer | Current status |
+| --- | --- |
+| Domain and application use cases | Implemented; domain and in-memory application tests pass |
+| JPA storage, principal adapter, and transactional audit wiring | Implemented; H2 and PostgreSQL integration tests pass |
+| PostgreSQL migration and persistence verification | Nine task tests pass against PostgreSQL 16.15, including V2 constraints and audit rollback |
+| HTTP controllers, JSON update handling, and error mapping | Implemented for personal and admin routes |
+| Runtime OpenAPI and Swagger UI | Available in local H2 development; disabled by default elsewhere |
+
+The HTTP implementation uses separate personal/admin creation DTOs. Personal creation
+never accepts attribution fields; admin creation accepts only `assigneeId` in addition
+to editable task fields. PATCH records property presence, so omitted values are retained
+and explicit null clears only description or dueDate. Due dates use YYYY-MM-DD strings.
+Both task and paginated responses have dedicated HTTP DTOs. See
+[TaskHttpTests](../../backend/src/test/java/net/mbope/taskmanager/task/TaskHttpTests.java)
+for executable request/response examples and authorization checks.
+
+## Runtime documentation and contract comparison
+
+See the [runtime documentation guide](../../backend/README.md#runtime-openapi-and-swagger-ui)
+for URLs, bearer-token entry, availability controls, and focused test commands.
+`API_DOCS_ENABLED=true` makes documentation public outside `prod`. Production startup
+rejects enabled documentation properties; see the [deployment guide](../deployment.md).
+
+The generated document uses server `/` and full `/api/v1/...` paths; this contract
+uses server `/api/v1` and relative paths. Tests compare effective URLs, expand
+references, and ignore descriptive text, ordering, redundant `required: false`,
+integer formats, and explicit null defaults. They retain request/response property
+names, requiredness, nullability, validation constraints, error media types, response
+headers, security, and ADMIN role metadata. All 16 operations match. PATCH schemas
+describe wire fields rather than the internal field-presence wrapper. Runtime DTO
+schema names are aligned with the contract. `backend/target/openapi.json` is the
+generated review artifact; the static contract is copied only to test resources.
+
+For intentional API changes, update this contract and runtime declarations together,
+then run `OpenApiTests` and `OpenApiDisabledTests` as described in the backend guide.
+Keep behavior tests for validation, authorization, and persistence: matching OpenAPI
+documents alone does not prove the implementation follows the documented behavior.
 
 ## Scope and design choices
 
@@ -126,6 +175,7 @@ problem extensions and infrastructure errors outside this contract.
 | 409 | `urn:task-manager:problem:email-conflict` | Email already registered |
 | 409 | `urn:task-manager:problem:assignee-disabled` | Selected recipient is disabled |
 | 415 | `urn:task-manager:problem:unsupported-media-type` | Unsupported request media type |
+| 429 | `urn:task-manager:problem:rate-limited` | Login/registration quota exceeded; includes Retry-After seconds |
 | 500 | `urn:task-manager:problem:internal-error` | Unexpected failure with safe generic detail |
 
 On personal routes, missing and other-assignee tasks produce identical 404 details,
@@ -138,9 +188,46 @@ Unmatched protected routes still require authentication; authenticated unknown
 routes return a Problem Details 404. Never disclose stack traces, SQL, secrets,
 or internal exception messages.
 
+## Operational response behavior
+
+With HTTPS enforcement enabled (required in `prod`), insecure requests reaching
+the security chain return 403 with type `urn:task-manager:problem:https-required`
+and detail `HTTPS is required.` Use the configured HTTPS endpoint; a bearer token
+does not bypass this transport requirement.
+
+Login and registration are rate-limited before body parsing/password hashing. A
+429 response uses Problem Details, Retry-After seconds, and Cache-Control: no-store.
+See the [deployment guide](../deployment.md) for quotas and per-process limitations.
+
+Application-filter responses include a generated X-Request-ID for operator correlation;
+caller-supplied IDs are ignored. CORS exposes X-Request-ID and Retry-After to allowed
+origins. Unexpected failures retain generic 500 bodies while logging safe diagnostic
+locations. Health endpoints are operational resources outside the `/api/v1` contract.
+
 ## Implementation verification
 
-Before implementation is considered complete, verify schema conformance, pagination
+The task domain has 11 passing tests covering creation defaults, Unicode length
+limits, required fields, all status transitions, optional-field clearing, immutable
+identity/attribution, restoration, and rejected updates leaving state unchanged.
+Layer and Modulith checks also pass. This verifies domain behavior only; the task
+HTTP behavior is verified separately by `TaskHttpTests` using signed JWTs and H2.
+
+Application use cases now have 17 passing in-memory tests for assignment, personal/admin access,
+partial updates, list scoping/filter forwarding, and audit requests/failure propagation.
+Persistence adapters and transactional wiring now have eight passing H2 integration
+tests, including database filtering, audit survival, and rollback after audit flush.
+All nine task PostgreSQL migration/integration tests also pass with Docker access.
+The 44 HTTP tests cover personal/admin access, creation URLs, request validation, partial
+updates, list filters, and audit persistence. See the
+[backend implementation sequence](../../backend/README.md#task-domain-and-next-steps).
+
+The latest `.\mvnw.cmd clean verify` run passed all 248 tests and packaged the
+executable JAR. This includes 218 Docker-free tests and 30 PostgreSQL-backed tests;
+the nine task PostgreSQL tests verify V2 migration/constraints and audit rollback.
+The previous Docker/cache access blockers are resolved by running with the required
+process access. See the [verification notes](../../backend/README.md#run-and-verify).
+
+When changing the API, retain regression coverage for schema conformance, pagination
 and filtering, every status transition, nullable patch fields, unknown-field rejection,
 Unicode password byte limits, duplicate email handling, and empty response bodies
 for 204. Verify self-assignment and attribution spoofing rejection for USER and ADMIN.
@@ -151,5 +238,5 @@ Location URLs accessible to creators, and transactional admin mutation audit rec
 Verify assignment to USER and ADMIN recipients, missing/disabled recipients,
 non-admin assignment rejection before recipient lookup, immutable attribution fields,
 registration role escalation rejection, ADMIN checks, generic login failures,
-disabled-account login rejection, and the accepted stale-token behavior. Generate
-runtime OpenAPI documentation and compare it with this contract to prevent drift.
+disabled-account login rejection, and the accepted stale-token behavior. Runtime
+OpenAPI comparison now runs in the Maven test suite to detect contract drift.

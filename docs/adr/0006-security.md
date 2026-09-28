@@ -2,7 +2,7 @@
 
 **Status:** Accepted  
 **Date:** 2026-09-15  
-**Updated:** 2026-09-23
+**Updated:** 2026-09-28
 
 ## Context
 
@@ -70,11 +70,26 @@ the earlier owner-only and creating-admin-only access rules.
 - **CSRF:** disable only while using ADR-0003's bearer-header-only model.
   Adding authentication cookies requires revisiting CSRF protection.
 - **HTTPS:** required in deployed environments.
-- **Rate limiting:** not implemented in v1. Login/registration remain susceptible
-  to automated abuse; add protection before public deployment.
+- **Rate limiting:** login/registration have bounded per-client and process-wide
+  fixed-window limits before parsing/hashing, returning 429 with Retry-After.
+  Limits are mandatory in prod. Multi-instance deployments need a shared gateway
+  limiter; per-process limits do not replace account-aware abuse controls.
 - **Secrets:** environment variables, with no committed defaults.
 - **Logging:** never log passwords, JWTs, Authorization headers, or full auth
   request bodies. Login failures must not disclose whether an account exists or is disabled.
+
+## Implementation status (2026-09-27)
+
+Account HTTP authorization and JWT handling are implemented. Task application tests
+cover self-assignment, assignee-scoped access for USER and ADMIN, admin checks before
+lookup, enabled-recipient validation, and administrative audit requests. Principal
+and persistence adapters and transactional audit storage are implemented. H2 and PostgreSQL integration
+tests verify database rollback after audit flush and audit survival after deletion.
+PostgreSQL verification passes with Docker access. Task HTTP endpoints enforce
+personal/admin access through the security chain and application services. Audit reads
+require restricted database/operator access; no public audit
+retrieval endpoint is exposed. See the
+[backend guide](../../backend/README.md#task-domain-and-next-steps).
 
 ## Rationale
 
@@ -104,3 +119,25 @@ input and cost constraints.
 
 - [OWASP authentication](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html)
 - [OWASP password storage](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
+
+## Runtime API documentation
+
+Documentation is public by default only in the local H2 profile. Other profiles
+disable it; `API_DOCS_ENABLED=true` explicitly makes it public outside `prod`.
+Production startup rejects enabled documentation settings. Security denies documentation and Swagger
+asset routes to every role when disabled, in addition to disabling generation
+and UI registration. Swagger UI keeps authorization in memory, without persisting
+tokens across reloads. API authentication and ADMIN requirements remain enforced.
+
+## Production safeguards and diagnostics
+
+The `prod` profile includes PostgreSQL and checks settings before database beans
+initialize. It requires Flyway, schema validation, HTTPS enforcement and rate limiting;
+rejects development/disclosure settings; and requires direct TLS or native forwarding
+with explicitly trusted proxy IPs. Operators must restrict network access to the app
+port and ensure the proxy strips untrusted forwarding headers.
+
+Only minimal health, liveness and readiness GET endpoints are public; other management
+access is denied even to ADMIN. Server-generated request IDs correlate unexpected
+MVC failures with logs that omit exception messages, causes and request data.
+See the [deployment runbook](../deployment.md) for configuration and limitations.
