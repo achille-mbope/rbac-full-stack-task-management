@@ -27,7 +27,7 @@ responsibilities and straightforward development and deployment.
 
 A modular monolith combines simple deployment with explicit, testable boundaries.
 A monorepo supports coordinated frontend/backend changes in a single commit.
-Client-side rendering fits the interactive, private workspace and the planned
+Client-side rendering fits the interactive, private workspace and the
 in-memory bearer-token model. Public content with search-indexing requirements
 would be a separate reason to revisit rendering strategy.
 

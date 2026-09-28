@@ -101,12 +101,15 @@ resolve to actual files. Angular's `proxy.conf.json` is used only by `npm start`
 it does not configure production routing or backend proxy trust.
 
 Same-origin hosting lets API services use relative `/api/v1/...` URLs. If deploying
-the frontend and API on separate origins, configure the client API URL and the
-backend's explicit HTTPS CORS allowlist for that arrangement.
+the frontend and API on separate origins, explicitly adapt the client API URL,
+bearer interceptor origin allowlist, and backend HTTPS CORS allowlist. The current
+interceptor deliberately sends tokens only to the same-origin API.
 
-The current pages are public previews that load no protected data. Registration,
-login, guards, and task/account operations remain pending; do not treat the scaffold
-as a completed authenticated application. See the [frontend guide](../frontend/README.md).
+Registration and login are implemented. Workspace pages require authentication,
+and the Users route requires ADMIN; task/account data operations remain pending.
+Reloads require sign-in because tokens are stored only in memory. Verify login,
+expiry, logout, and guarded deep links through the deployed HTTPS origin.
+See the [frontend guide](../frontend/README.md).
 
 ## Authentication request limits
 

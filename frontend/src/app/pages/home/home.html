@@ -14,11 +14,13 @@
             <p>A place to organize priorities and follow your progress.</p>
             <span class="card-link">Explore tasks <span aria-hidden="true">→</span></span>
         </a>
-        <a class="card" routerLink="/users">
-            <p class="eyebrow">Your team</p>
-            <h2>Users</h2>
-            <p>A place for administrators to manage accounts and access.</p>
-            <span class="card-link">Explore users <span aria-hidden="true">→</span></span>
-        </a>
+        @if (auth.isAdmin()) {
+            <a class="card" routerLink="/users">
+                <p class="eyebrow">Your team</p>
+                <h2>Users</h2>
+                <p>A place for administrators to manage accounts and access.</p>
+                <span class="card-link">Explore users <span aria-hidden="true">→</span></span>
+            </a>
+        }
     </div>
 </section>

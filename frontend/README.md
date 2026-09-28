@@ -2,7 +2,8 @@
 
 Angular 21 client-side application with standalone components, lazy routes, and SCSS.
 SSR is not enabled. The scaffold includes a responsive navigation shell and preview
-pages; authentication, route guards, account loading, and task operations are pending.
+pages, registration/login, guarded routes, and in-memory authentication. Account loading
+and task operations are pending.
 
 ## Run locally
 
@@ -19,18 +20,19 @@ Open http://localhost:4200. Start the backend separately using the
 
 ## Routing and API proxy
 
-| URL            | Page                        |
-| -------------- | --------------------------- |
-| `/`            | Redirects to `/home`        |
-| `/home`        | Overview                    |
-| `/tasks`       | Task workspace preview      |
-| `/users`       | User administration preview |
-| Unknown routes | Redirect to `/home`         |
+| URL            | Page                      |
+| -------------- | ------------------------- |
+| `/`            | Redirects to `/home`      |
+| `/login`       | Sign in (guests)          |
+| `/register`    | Create account (guests)   |
+| `/home`        | Overview (signed in)      |
+| `/tasks`       | Task preview (signed in)  |
+| `/users`       | User preview (ADMIN only) |
+| Unknown routes | Redirect to `/home`       |
 
 Navigation uses Angular Router, lazy page imports, page titles, and active-link state.
-The preview routes are public and load no protected data. Add authentication and
-ADMIN guards with the corresponding features; the backend remains the authority
-for API access.
+Workspace routes require login; `/users` also requires ADMIN. The backend remains
+the authority for API access. Preview pages still load no task/account data.
 
 `HttpClient` is registered in `app.config.ts`. Future services should request
 relative URLs such as `/api/v1/tasks`. During `npm start`, `proxy.conf.json` forwards
@@ -42,6 +44,34 @@ A 401 from an unauthenticated protected endpoint is expected; the proxy does not
 bypass authentication. Connection errors indicate the backend is unavailable or
 the target port is wrong.
 
+## Authentication
+
+Registration posts email and password to `/api/v1/auth/register`, then redirects to
+login with a success message. It does not automatically log in. New passwords must
+contain at least 15 Unicode code points and no more than 72 UTF-8 bytes; spaces are
+preserved. Login posts to `/api/v1/auth/login`.
+
+The access token exists only in the auth service's memory. Reloads and new tabs
+require login again; no local storage, session storage, cookies, or refresh tokens
+are used. The bearer interceptor attaches it only to same-origin `/api/v1/`
+requests, excluding login and registration.
+
+The session ends at the earlier of JWT `exp` or the response's `expiresIn`.
+A timer handles expiry while idle; guards and outgoing API requests also check the
+clock in case browser timers were delayed. A protected request's 401 clears its
+current session and returns to login; 403 preserves the session. A late response
+from an earlier login or a rejected request from an older token cannot restore or
+clear a newer session.
+
+Logout clears memory and returns to login. It does not revoke a copied JWT on the
+server: existing tokens remain valid until expiry (normally 15 minutes), including
+after password, role, or account-status changes. There is no logout API.
+Decoded roles only control navigation; backend JWT validation enforces access.
+Return destinations are limited to the three workspace routes.
+
+Forms prevent duplicate submission and show validation, credentials, duplicate
+email, rate-limit, and connection errors without exposing backend details.
+
 ## Build and verify
 
 Run from `frontend/`:
@@ -51,7 +81,14 @@ npm run build
 npm test -- --watch=false
 ```
 
-Recorded verification on 2026-09-29:
+Authentication verification on 2026-09-29:
+
+- Production build passed.
+- 36 tests passed, covering forms, validation, guarded routing, roles, bearer scope,
+  expiry, logout, 401/403 handling, and stale responses.
+- Live browser authentication against the backend remains unverified.
+
+Earlier scaffold verification on 2026-09-29:
 
 - Production build passed, including separate lazy chunks for all three pages.
 - Six tests passed, covering component creation, root/unknown-route redirects,
@@ -79,8 +116,7 @@ proxy is not included in the production build. Follow the
 
 ## Next implementation milestone
 
-Add registration/login, in-memory JWT storage, a bearer interceptor, route guards,
-expiry handling, and client-side logout. Then connect task listing, creation, editing,
-completion, and deletion. Implement ADMIN-only user management after authentication.
+Connect task listing, creation, editing, completion, and deletion. Then implement
+account operations behind the existing ADMIN guard.
 The first end-to-end milestone is registration, login, task creation/completion,
 and logout through the browser.

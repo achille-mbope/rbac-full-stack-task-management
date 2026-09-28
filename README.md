@@ -18,7 +18,7 @@ implemented. Production startup safeguards, authentication rate limiting, and
 operational diagnostics are also implemented. See the [deployment guide](docs/deployment.md).
 Local PostgreSQL Docker Compose and an Angular frontend scaffold are available.
 The frontend has lazy routes, a responsive layout, and a development API proxy;
-authentication and task/account integration remain pending.
+authentication is implemented; task/account integration remains pending.
 The scope below describes the full planned v1.
 
 The implemented backend is ready for frontend integration. The full Maven suite
@@ -55,7 +55,7 @@ v1 scope. Draft task fields and status transitions are defined in the
 Registration always assigns `USER`. Account permissions are enforced by backend
 services and HTTP security. Task application services enforce assignment and access
 rules through persistence and principal adapters, with H2 integration coverage.
-Frontend guards remain planned. See
+Frontend guards require sign-in for workspace routes and ADMIN for user administration. See
 [ADR-0006](docs/adr/0006-security.md) for the authorization policy.
 
 ## Planned Technology Baseline
@@ -83,12 +83,12 @@ resolutions are recorded in its npm lockfile. Version selection and maintenance 
 ## Architecture
 
 The monorepo contains a single Spring Boot backend deployable. A separate Angular
-SPA is scaffolded; its authenticated REST integration is the next milestone.
+SPA provides authentication; task/account REST integration is the next milestone.
 
 | Location | Purpose | Current state |
 | --- | --- | --- |
 | `backend/` | Spring Boot modular monolith | Account/task HTTP APIs, JWT security, persistence, and transactional task auditing implemented |
-| `frontend/` | Angular SPA | Responsive shell, lazy preview pages, and development API proxy |
+| `frontend/` | Angular SPA | Authentication, guarded lazy pages, responsive shell, and development API proxy |
 | `docs/adr/` | Accepted architecture decisions | Available |
 | `docker-compose.yml` | Local PostgreSQL infrastructure | Persistent volume, loopback port, and health check implemented |
 
@@ -140,7 +140,7 @@ stable account IDs without cross-module JPA associations.
 
 Runtime API documentation is implemented and compared with the checked-in contract.
 Local PostgreSQL Compose and packaged production smoke testing are available.
-Frontend authentication and task/account integration remain pending.
+Frontend authentication is implemented; task/account integration remains pending.
 
 See the [task implementation guide](backend/README.md#task-domain-and-next-steps) for the
 implemented rules and remaining responsibilities.
@@ -156,8 +156,10 @@ credential verification. Events are optional for independent reactions, with
 delivery and consistency requirements defined before introducing them.
 
 The Angular frontend uses standalone components and lazy pages under `src/app/pages/`.
-Its client-side layout includes overview, task, and user previews. Shared authentication,
-guards, and bearer-token interceptors remain planned; SSR is not enabled.
+Its client-side layout includes overview, task, and user previews. Authentication uses in-memory bearer tokens and guarded routes; SSR is not enabled.
+Registration creates an account, then asks the user to sign in. Reload, expiry, and
+logout require a fresh login. Logout clears browser memory but does not revoke a
+copied JWT; it remains valid until expiry, normally 15 minutes.
 
 ## Database Profiles
 
@@ -274,7 +276,8 @@ npm start
 
 Open `http://localhost:4200`. The development server forwards `/api/**` to the backend
 on `http://127.0.0.1:8080`. Overview, My tasks, and Users are preview pages; they do
-not yet load protected data or provide sign-in and CRUD operations.
+not yet load protected data or provide CRUD operations. Registration and sign-in
+are available at `/register` and `/login`; `/users` requires ADMIN.
 
 From `frontend/`, run `npm run build` and `npm test -- --watch=false` to verify the
 scaffold. See the [frontend guide](frontend/README.md) for prerequisites and proxy
@@ -341,7 +344,8 @@ for routing, proxy settings, tests, and production hosting requirements.
 - [x] Task application use cases and authorization verified independently of persistence.
 - [x] Task persistence, principal wiring, audit survival, and rollback verified against H2.
 - [x] Account registration, login, token rejection, and password changes verified through HTTP tests.
-- [ ] Frontend authentication, expiry handling, and client-side logout work end to end.
+- [x] Frontend registration/login, memory-only tokens, guards, expiry handling, and logout implemented.
+- [ ] Live browser authentication and task flows verified end to end.
 - [x] Task application tests cover user isolation, admin access, and assignment validation.
 - [x] Task isolation, self-assignment, and admin assignment verified through HTTP and H2 persistence.
 - [x] Administrative task edits/deletions and audit rollback verified against H2.
@@ -368,7 +372,11 @@ the normal Maven build succeeds with access to Docker and the dependency cache.
 The [packaged production smoke test](docs/deployment.md#packaged-production-smoke-test)
 also passed against isolated PostgreSQL over certificate-verified TLS.
 
-Frontend verification (2026-09-29): the production build and all six tests passed.
+Frontend authentication verification (2026-09-29): the production build and all
+36 tests passed. Forms, role guards, bearer scoping, expiry, logout, and stale
+responses are covered with HTTP mocks. Live browser authentication remains unverified.
+
+Earlier scaffold verification (2026-09-29): the production build and all six tests passed.
 A live development-proxy check returned the backend's expected 401 Problem Details
 for `/api/v1/tasks`; direct loading of `/tasks` served the app shell. Visual browser
 verification and authenticated frontend/backend flows remain unverified.

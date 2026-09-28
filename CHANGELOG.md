@@ -4,11 +4,22 @@ Notable project changes are recorded here, newest first. The project has no tagg
 releases. Account HTTP endpoints and JWT authentication are implemented, along with
 task domain, application logic, persistence, transactional audit wiring, and HTTP
 endpoints and runtime OpenAPI/Swagger UI. The Angular frontend has a routing/layout
-scaffold and development API proxy; authentication and task/account integration
-remain pending. Older entries describe the state at
+scaffold, development API proxy, and authentication; task/account integration
+remains pending. Older entries describe the state at
 their implementation milestone; the newest entry records current verification.
 
 ## Unreleased
+
+### Frontend authentication
+
+- Added registration and login forms with validation, pending states, and safe error messages.
+- Store access tokens only in memory; page reload requires login again.
+- Attach bearer tokens only to the same-origin API, excluding registration/login.
+- Guard workspace routes and restrict user administration to ADMIN; hide unavailable navigation.
+- Handle JWT expiry, rejected tokens, client-side logout, and stale responses.
+- Update frontend, project, backend, architecture, and deployment documentation.
+- Verified production build and 36 frontend tests; live browser authentication remains unverified.
+
 
 ### Frontend routing and application layout
 
