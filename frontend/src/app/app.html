@@ -1,0 +1,32 @@
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="app-shell">
+    <aside class="sidebar">
+        <a class="brand" routerLink="/home" aria-label="Task Manager home">
+            <span class="brand-mark" aria-hidden="true">✓</span>
+            <span>Task Manager<small>A little more organized.</small></span>
+        </a>
+        <nav aria-label="Main navigation">
+            <a routerLink="/home" routerLinkActive="active" ariaCurrentWhenActive="page">
+                <span aria-hidden="true">01</span> Overview
+            </a>
+            <a routerLink="/tasks" routerLinkActive="active" ariaCurrentWhenActive="page">
+                <span aria-hidden="true">02</span> My tasks
+            </a>
+            <a routerLink="/users" routerLinkActive="active" ariaCurrentWhenActive="page">
+                <span aria-hidden="true">03</span> Users
+            </a>
+        </nav>
+        <p class="sidebar-note">Make room for what matters.<br />One task at a time.</p>
+    </aside>
+
+    <div class="workspace">
+        <header class="topbar">
+            <span>Your workspace</span>
+            <span class="preview-label">Preview</span>
+        </header>
+        <main id="main-content" tabindex="-1">
+            <router-outlet />
+        </main>
+        <footer>Task Manager <span>Plan. Focus. Finish.</span></footer>
+    </div>
+</div>

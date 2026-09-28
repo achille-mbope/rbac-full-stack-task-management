@@ -16,7 +16,9 @@ The task domain, application use cases, persistence, and runtime wiring are impl
 Personal and administrative task HTTP endpoints and runtime OpenAPI/Swagger UI are
 implemented. Production startup safeguards, authentication rate limiting, and
 operational diagnostics are also implemented. See the [deployment guide](docs/deployment.md).
-Local PostgreSQL Docker Compose is available; the frontend remains pending.
+Local PostgreSQL Docker Compose and an Angular frontend scaffold are available.
+The frontend has lazy routes, a responsive layout, and a development API proxy;
+authentication and task/account integration remain pending.
 The scope below describes the full planned v1.
 
 The implemented backend is ready for frontend integration. The full Maven suite
@@ -64,8 +66,8 @@ Frontend guards remain planned. See
 | Spring Boot | 3.5.x |
 | Spring Modulith | 1.4.x |
 | Backend build | Maven through the committed Maven Wrapper |
-| Frontend | Angular 20 with matching Angular CLI |
-| UI library, if used | Angular Material 20 |
+| Frontend | Angular 21 with matching Angular CLI |
+| UI library | None; the scaffold uses SCSS |
 | Node.js | 22.x, at least 22.12.0 |
 | Frontend package manager | npm with a committed lockfile |
 | Disposable development database | H2 in memory |
@@ -74,19 +76,19 @@ Frontend guards remain planned. See
 | Authentication | HS256 JWT bearer tokens |
 | Runtime API documentation | OpenAPI 3.1 and Swagger UI through springdoc |
 
-Backend versions are pinned in its POM and Maven Wrapper. Frontend versions remain
-to be pinned. Version selection and maintenance requirements are defined in
+Backend versions are pinned in its POM and Maven Wrapper. Frontend dependency
+resolutions are recorded in its npm lockfile. Version selection and maintenance requirements are defined in
 [ADR-0005](docs/adr/0005-build-tool.md).
 
 ## Architecture
 
 The monorepo contains a single Spring Boot backend deployable. A separate Angular
-SPA communicating over REST is planned.
+SPA is scaffolded; its authenticated REST integration is the next milestone.
 
 | Location | Purpose | Current state |
 | --- | --- | --- |
 | `backend/` | Spring Boot modular monolith | Account/task HTTP APIs, JWT security, persistence, and transactional task auditing implemented |
-| `frontend/` | Angular SPA | Not scaffolded |
+| `frontend/` | Angular SPA | Responsive shell, lazy preview pages, and development API proxy |
 | `docs/adr/` | Accepted architecture decisions | Available |
 | `docker-compose.yml` | Local PostgreSQL infrastructure | Persistent volume, loopback port, and health check implemented |
 
@@ -138,7 +140,7 @@ stable account IDs without cross-module JPA associations.
 
 Runtime API documentation is implemented and compared with the checked-in contract.
 Local PostgreSQL Compose and packaged production smoke testing are available.
-The frontend remains pending.
+Frontend authentication and task/account integration remain pending.
 
 See the [task implementation guide](backend/README.md#task-domain-and-next-steps) for the
 implemented rules and remaining responsibilities.
@@ -153,8 +155,9 @@ Synchronous APIs support interactions requiring an immediate answer, such as
 credential verification. Events are optional for independent reactions, with
 delivery and consistency requirements defined before introducing them.
 
-The Angular frontend is planned around feature folders, with shared components
-and central authentication, guards, and HTTP interceptors.
+The Angular frontend uses standalone components and lazy pages under `src/app/pages/`.
+Its client-side layout includes overview, task, and user previews. Shared authentication,
+guards, and bearer-token interceptors remain planned; SSR is not enabled.
 
 ## Database Profiles
 
@@ -250,7 +253,7 @@ existing file. On subsequent starts, run only `.\mvnw.cmd spring-boot:run` from
 The default `h2` profile starts the API at `http://localhost:8080` without Docker
 or a separate database. H2 data is lost when the application stops. Press `Ctrl+C`
 to stop it. Open `http://localhost:8080/swagger-ui.html` to explore the API.
-The frontend is not implemented yet; an unauthenticated request to `/` returns 401.
+The frontend runs separately on port 4200; an unauthenticated request to the backend's `/` returns 401.
 
 On Unix, run `pwsh ./setup-local.ps1` if PowerShell is installed, then
 `./mvnw spring-boot:run`, both from `backend/`. Alternatively, supply an external
@@ -258,6 +261,24 @@ On Unix, run `pwsh ./setup-local.ps1` if PowerShell is installed, then
 [authentication configuration guide](backend/README.md#authentication-configuration).
 PostgreSQL startup requires an external signing key and database configuration;
 see the [backend guide](backend/README.md#run-and-verify).
+
+### Start the frontend
+
+Keep the backend running, then open a second terminal at the repository root:
+
+```powershell
+cd frontend
+npm ci
+npm start
+```
+
+Open `http://localhost:4200`. The development server forwards `/api/**` to the backend
+on `http://127.0.0.1:8080`. Overview, My tasks, and Users are preview pages; they do
+not yet load protected data or provide sign-in and CRUD operations.
+
+From `frontend/`, run `npm run build` and `npm test -- --watch=false` to verify the
+scaffold. See the [frontend guide](frontend/README.md) for prerequisites and proxy
+troubleshooting. Production hosting needs its own API forwarding and SPA fallback.
 
 ### Test registration and login with Postman
 
@@ -297,8 +318,9 @@ On Unix, use `./mvnw` instead of `.\mvnw.cmd`, keeping the test selector quoted.
 Test reports are written to `backend/target/surefire-reports/`.
 
 See the [backend guide](backend/README.md) for account endpoints, module contracts,
-and administrator provisioning. The frontend remains pending; Node.js/npm and
-frontend install/build commands will be needed once it is scaffolded.
+and administrator provisioning. For the frontend, run `npm ci` and `npm start` from
+`frontend/`, then open `http://localhost:4200`. See the [frontend guide](frontend/README.md)
+for routing, proxy settings, tests, and production hosting requirements.
 
 ## Architecture Decision Records
 
@@ -313,7 +335,7 @@ frontend install/build commands will be needed once it is scaffolded.
 ## V1 Delivery Checklist
 
 - [x] Backend scaffolded with pinned tools and dependencies.
-- [ ] Frontend scaffolded with pinned tools and dependencies.
+- [x] Frontend scaffolded with routing, a development API proxy, and an npm lockfile.
 - [x] Task fields, validation, and lifecycle specified in the draft API contract.
 - [x] Task domain implemented and verified with domain and architecture tests.
 - [x] Task application use cases and authorization verified independently of persistence.
@@ -345,6 +367,11 @@ the normal Maven build succeeds with access to Docker and the dependency cache.
 
 The [packaged production smoke test](docs/deployment.md#packaged-production-smoke-test)
 also passed against isolated PostgreSQL over certificate-verified TLS.
+
+Frontend verification (2026-09-29): the production build and all six tests passed.
+A live development-proxy check returned the backend's expected 401 Problem Details
+for `/api/v1/tasks`; direct loading of `/tasks` served the app shell. Visual browser
+verification and authenticated frontend/backend flows remain unverified.
 
 CI configuration is outside v1 scope. Local verification is required; future CI
 must run the same checks.

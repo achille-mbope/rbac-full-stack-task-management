@@ -2,7 +2,7 @@
 
 **Status:** Accepted  
 **Date:** 2026-09-15  
-**Updated:** 2026-09-23
+**Updated:** 2026-09-29
 
 ## Context
 
@@ -15,7 +15,8 @@ responsibilities and straightforward development and deployment.
 
 - One Spring Boot deployable organized into `auth`, `user`, `task`, and
   `common` modules with boundaries defined in [ADR-0007](0007-modulith.md).
-- A separate Angular SPA communicating with the backend through REST.
+- A separate client-rendered Angular SPA communicating with the backend through REST.
+  SSR and build-time prerendering are not enabled for the authenticated task workspace.
 - A monorepo with `backend/`, `frontend/`, `docs/`, and a
   `docker-compose.yml` for local PostgreSQL.
 - Business modules own their entities and repositories. Cross-module access uses
@@ -26,6 +27,9 @@ responsibilities and straightforward development and deployment.
 
 A modular monolith combines simple deployment with explicit, testable boundaries.
 A monorepo supports coordinated frontend/backend changes in a single commit.
+Client-side rendering fits the interactive, private workspace and the planned
+in-memory bearer-token model. Public content with search-indexing requirements
+would be a separate reason to revisit rendering strategy.
 
 ## Alternatives
 
@@ -38,6 +42,9 @@ A monorepo supports coordinated frontend/backend changes in a single commit.
 ## Consequences
 
 - The backend is released and scaled as a unit.
+- Frontend builds are static assets. Production hosting must route `/api/**` to
+  the backend before applying an `index.html` fallback for frontend routes.
+- The Angular development proxy is local tooling, not production infrastructure.
 - Module APIs and frontend/backend contracts require maintenance.
 - Service extraction still requires data, transaction, and deployment redesign.
 - CI configuration is outside v1 scope. Developers must run local Maven

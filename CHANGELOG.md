@@ -3,11 +3,29 @@
 Notable project changes are recorded here, newest first. The project has no tagged
 releases. Account HTTP endpoints and JWT authentication are implemented, along with
 task domain, application logic, persistence, transactional audit wiring, and HTTP
-endpoints and runtime OpenAPI/Swagger UI. The frontend remains planned. Older entries describe the state at
+endpoints and runtime OpenAPI/Swagger UI. The Angular frontend has a routing/layout
+scaffold and development API proxy; authentication and task/account integration
+remain pending. Older entries describe the state at
 their implementation milestone; the newest entry records current verification.
 
 ## Unreleased
 
+### Frontend routing and application layout
+
+- Built on the Angular 21 CSR scaffold with a responsive navigation shell, skip
+  link, active-route indicators, page titles, and lazy overview/task/user pages.
+- Added the development `/api/**` proxy to Spring Boot on port 8080 and registered
+  HttpClient for future API services. Preview pages load no protected account/task data.
+- Replaced starter-template tests with routing checks for redirects, navigation,
+  and lazy pages; production build and all six frontend tests passed.
+- Added frontend setup, proxy, and hosting instructions. Authentication, guards,
+  and task/account operations remain subsequent work.
+- Updated architecture and deployment guidance for CSR, static hosting, API forwarding,
+  and deep-link fallback, and added the two-terminal development workflow.
+- Verified on 2026-09-29: production build and six tests passed; live proxy forwarding
+  returned the backend's expected 401 Problem Details and direct `/tasks` loading
+  served the app shell. Visual browser review and authenticated end-to-end flows
+  remain pending.
 ### Database documentation
 
 - Added a database guide derived from Flyway V1/V2 and persistence adapters, with a

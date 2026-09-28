@@ -16,7 +16,8 @@ Task application services now implement personal and administrative use cases,
 assignment validation, and authorization through ports. JPA persistence, principal/audit
 adapters, transactional Spring wiring, and personal/admin HTTP adapters are implemented.
 Runtime OpenAPI/Swagger UI, production configuration safeguards, authentication
-rate limiting, and health/request diagnostics are implemented. The Angular UI remains pending.
+rate limiting, and health/request diagnostics are implemented. The Angular shell and
+preview routes are scaffolded; authentication and task/account integration remain pending.
 See the [production deployment guide](../docs/deployment.md).
 
 ## HTTP endpoints
@@ -119,7 +120,9 @@ cd backend
 
 Run setup once per checkout, then leave the backend running while sending requests.
 The default H2 profile needs no Docker or separate database. These requests use
-`http://localhost:8080`; Swagger UI is available at `/swagger-ui.html`. The frontend remains planned.
+`http://localhost:8080`; Swagger UI is available at `/swagger-ui.html`. Start the
+frontend separately on port 4200 using the [frontend guide](../frontend/README.md).
+Its development proxy forwards `/api/**` to this backend without bypassing security.
 
 ### Register an account
 
@@ -622,7 +625,8 @@ integration is the next project milestone; it does not require expanding the API
 
 During integration, verify browser CORS, bearer-token handling, expiry and client-side
 logout, validation/permission errors, and rate-limit feedback. These end-to-end flows
-remain unverified until the frontend exists.
+remain unverified until frontend authentication and API services are implemented.
+The existing shell, lazy-route tests, and development proxy provide the starting point.
 
 Before public release, complete the [deployment checklist](../docs/deployment.md#public-release-checklist)
 against the real environment. Local smoke testing does not verify deployed DNS,
