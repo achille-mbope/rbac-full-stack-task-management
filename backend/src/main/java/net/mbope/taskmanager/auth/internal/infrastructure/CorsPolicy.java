@@ -55,7 +55,7 @@ class CorsPolicy {
         cors.setAllowedOrigins(allowedOrigins);
         cors.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         cors.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
-        cors.setExposedHeaders(List.of("Location", "WWW-Authenticate"));
+        cors.setExposedHeaders(List.of("Location", "WWW-Authenticate", "Retry-After", "X-Request-ID"));
         cors.setAllowCredentials(false);
         return cors;
     }

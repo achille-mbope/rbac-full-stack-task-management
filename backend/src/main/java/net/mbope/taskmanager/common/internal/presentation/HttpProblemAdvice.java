@@ -20,6 +20,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @RestControllerAdvice
 @Order(Ordered.LOWEST_PRECEDENCE)
 class HttpProblemAdvice extends ResponseEntityExceptionHandler {
+    private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(HttpProblemAdvice.class);
     @Override
     protected ResponseEntity<Object> handleExceptionInternal(Exception exception, Object body,
                                                              HttpHeaders headers, HttpStatusCode status, WebRequest request) {
@@ -47,7 +48,11 @@ class HttpProblemAdvice extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    ResponseEntity<ProblemDetail> unexpected(WebRequest request) {
+    ResponseEntity<ProblemDetail> unexpected(Exception exception, WebRequest request) {
+        // Exception messages/causes can contain SQL values or credentials. Log locations only.
+        LOG.error("Unhandled request failure requestId={} exceptionType={} stack={}",
+                org.slf4j.MDC.get("requestId"), exception.getClass().getName(),
+                java.util.Arrays.toString(exception.getStackTrace()));
         return ApiProblems.response(httpProblem(HttpStatus.INTERNAL_SERVER_ERROR, path(request)));
     }
 

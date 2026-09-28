@@ -2,7 +2,7 @@
 
 **Status:** Accepted  
 **Date:** 2026-09-15  
-**Updated:** 2026-09-27
+**Updated:** 2026-09-28
 
 ## Context
 
@@ -14,7 +14,10 @@ We need disposable local runs and realistic verification of persistence and migr
   `spring.jpa.hibernate.ddl-auto=create-drop`. Data is disposable.
 - **PostgreSQL development:** PostgreSQL 16 through Docker Compose, Flyway enabled,
   and `spring.jpa.hibernate.ddl-auto=validate`.
-- **Production:** PostgreSQL 16 with Flyway and Hibernate validation.
+- **Production:** select `prod`, which includes `postgres`, with PostgreSQL 16,
+  Flyway and Hibernate validation. Startup checks reject H2, non-PostgreSQL URLs,
+  missing database credentials, disabled migrations, and schema mutation settings
+  before database initialization.
   Local Compose configuration is not a production deployment plan.
 - **Schema source of truth:** versioned Flyway SQL migrations in one ordered
   migration directory. Business modules own changes to their tables. Applied
@@ -22,7 +25,7 @@ We need disposable local runs and realistic verification of persistence and migr
 - **Integration tests:** Testcontainers with PostgreSQL 16 using the same
   migrations and Hibernate validation as the PostgreSQL profile.
 
-## Implementation status (2026-09-27)
+## Implementation status (2026-09-28)
 
 V1 creates accounts; V2 adds tasks and administrative audit storage. Tasks reference
 accounts by scalar UUID foreign keys without cross-module JPA associations. Audit
@@ -31,6 +34,11 @@ schema through Hibernate and does not run these migrations. H2 persistence and
 rollback tests pass. PostgreSQL 16.15 tests also pass: Flyway applies V1/V2, Hibernate
 validates the schema, and integration tests cover constraints, filtering, and audit
 rollback. Local Compose remains planned.
+
+The `prod` profile and startup checks are implemented. PostgreSQL development uses
+an externally supplied database until Compose is added. Selecting `postgres` alone
+does not activate production checks. See the [deployment guide](../deployment.md)
+for transport, secrets, migration rollout, and operational requirements.
 
 ## Rationale
 

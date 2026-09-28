@@ -8,6 +8,28 @@ their implementation milestone; the newest entry records current verification.
 
 ## Unreleased
 
+### Production hardening, rate limiting, and diagnostics
+
+- Added a prod profile that selects PostgreSQL and rejects unsafe settings before
+  database initialization, including H2, schema mutation, Swagger exposure, disabled
+  protection, and unsafe error/management disclosure. Requires direct TLS or
+  explicitly trusted native proxy processing and HTTPS CORS origins.
+- Added bounded per-client and process-wide login/registration limits before
+  request parsing/password hashing, with 429 Problem Details and Retry-After.
+  Documented fixed-window, restart, NAT, and multi-instance limitations.
+- Added minimal Actuator health/readiness/liveness endpoints with restricted
+  management access, graceful shutdown, generated request IDs, secret-safe
+  unexpected-error diagnostics, and low-cardinality rejection metrics.
+- Extended the API contract with authentication 429 responses. Added configuration,
+  concurrency, CORS, diagnostics, PostgreSQL production-profile, and real-server
+  proxy-spoofing tests. Updated Docker-free test selectors for the new Docker suite.
+- Added a production deployment runbook and updated READMEs and security/API ADRs.
+- Added a documentation index, clarified `postgres` versus `prod` activation in
+  the database ADR and setup guides, and documented manual-test rate limits and
+  HTTPS-required API errors.
+- Verified on 2026-09-28: `clean verify` passed 246 tests (218 Docker-free and
+  28 PostgreSQL-backed), with no failures, errors, or skips, and packaged the JAR.
+
 ### Runtime OpenAPI and Swagger UI
 
 - Added springdoc-openapi 2.8.17 with generated OpenAPI 3.1 JSON/YAML and Swagger UI.

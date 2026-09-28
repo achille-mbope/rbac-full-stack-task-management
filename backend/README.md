@@ -7,7 +7,7 @@ The backend uses Java 21, Spring Boot 3.5.16, Spring Modulith 1.4.13, and the co
 The `user` module implements account services, persistence, and account HTTP adapters.
 The `auth` module implements login, JWT issuance/validation, and stateless HTTP security.
 The `common` module provides consistent Problem Details responses, a shared clock,
-and runtime OpenAPI metadata.
+runtime OpenAPI metadata, production configuration checks, and request diagnostics.
 The `task` module now contains its framework-independent domain: immutable assignee
 and creator IDs, title/description validation by Unicode code points, optional due
 dates, and TODO/IN_PROGRESS/DONE status changes (including reopening). New tasks
@@ -15,7 +15,9 @@ default to TODO; all editable fields are validated before an update changes stat
 Task application services now implement personal and administrative use cases,
 assignment validation, and authorization through ports. JPA persistence, principal/audit
 adapters, transactional Spring wiring, and personal/admin HTTP adapters are implemented.
-Runtime OpenAPI/Swagger UI is implemented. The Angular UI remains pending.
+Runtime OpenAPI/Swagger UI, production configuration safeguards, authentication
+rate limiting, and health/request diagnostics are implemented. The Angular UI remains pending.
+See the [production deployment guide](../docs/deployment.md).
 
 ## HTTP endpoints
 
@@ -60,10 +62,12 @@ The local `h2` profile enables documentation by default. Other profiles, includi
 | Local `h2`, no override | Public |
 | `postgres` or another profile, no override | Disabled |
 | Any profile with `API_DOCS_ENABLED=false` | Disabled |
-| Any profile with `API_DOCS_ENABLED=true` | Public |
+| Non-prod profile with `API_DOCS_ENABLED=true` | Public |
+| `prod` | Disabled; attempts to enable documentation properties fail startup |
 
-Setting `API_DOCS_ENABLED=true` explicitly enables **public** documentation in any
-profile; keep it disabled on deployed hosts. Configure this switch rather than
+Setting `API_DOCS_ENABLED=true` explicitly enables **public** documentation in
+non-production profiles. In `prod`, this switch cannot enable documentation, and
+unsafe overrides of the underlying properties cause startup to fail. Configure this switch rather than
 individual springdoc flags. Disabled resources are not registered, and security
 also denies their JSON, YAML, configuration, UI, and asset URLs to every role
 (anonymous requests receive 401; authenticated requests receive 403).
@@ -174,12 +178,19 @@ This is the expected permission check. Switching to **No Auth** returns
 | Register with password `short` or an extra `roles` field | 400 Bad Request |
 | Log in with valid credentials | 200 OK with a bearer token |
 | Log in with an incorrect password | 401 Unauthorized |
+| Exceed the login or registration quota | 429 Too Many Requests with Retry-After |
 | GET `/api/v1/admin/users` without a token or with an expired token | 401 Unauthorized |
 | GET `/api/v1/admin/users` with a valid USER token | 403 Forbidden |
 
 Errors use `application/problem+json`. If Postman cannot connect, confirm the
 backend has finished starting and is still running on port 8080. Restarting the
 default H2 backend deletes accounts: register again before logging in.
+
+Rate limits also apply during manual H2 development: the defaults allow 5 registration
+and 20 login attempts per client IP per 60-second window, subject to process-wide
+quotas. Successful and malformed attempts count. If you receive 429, wait for the
+number of seconds in `Retry-After` before trying again. See the
+[rate-limit settings](../docs/deployment.md#authentication-request-limits).
 
 To run the automated account HTTP/JWT tests from `backend/`:
 
@@ -232,7 +243,9 @@ disabled accounts cannot log in again. Logout is client-side token removal.
 Set `CORS_ALLOWED_ORIGINS` to a comma-separated list of explicit browser origins.
 H2 development defaults to `http://localhost:4200`; other profiles default to no
 cross-origin access. Wildcards are rejected. Deployed environments require HTTPS.
-Login/registration rate limiting remains deferred and is required before public deployment.
+Login/registration rate limiting is enabled by default, with separate per-client
+and process-wide quotas, HTTP 429 Problem Details, and Retry-After. It cannot be
+disabled in `prod`. See the [limits and deployment requirements](../docs/deployment.md).
 
 ## Security and HTTP code ownership
 
@@ -243,11 +256,14 @@ Login/registration rate limiting remains deferred and is required before public 
 | `auth.internal.presentation.LoginProblemAdvice` | Map rejected credentials to a generic 401 |
 | `auth.internal.infrastructure.HttpSecurityConfiguration` | Wire the stateless filter chain and route authorization |
 | `auth.internal.infrastructure.CorsPolicy` | Configure allowed origins and preflight handling |
+| `auth.internal.infrastructure.AuthenticationRateLimiter`, `AuthenticationRateLimitFilter` | Enforce bounded authentication quotas before parsing/hashing |
+| `auth.internal.infrastructure.SecureTransportFilter` | Reject insecure production requests based on container TLS state |
+| `common.internal.infrastructure.ProductionConfiguration` | Validate production settings before database initialization |
 | `auth.internal.infrastructure.SecurityProblemHandlers` | Write authentication/authorization Problem Details from security filters |
 | `auth.internal.infrastructure.JwtConfiguration` | Load the signing key and configure the encoder/decoder |
 | `auth.internal.infrastructure.JwtPolicy`, `JwtClaimsValidator`, `JwtTokenIssuer` | Define token settings, validate claims, and issue tokens |
 | `user.internal.presentation` | Separate registration, password, and account-administration controllers and their request DTOs |
-| `common.internal.presentation` | Strict JSON configuration and safe, shared HTTP validation/error mapping |
+| `common.internal.presentation` | Strict JSON, shared HTTP validation/errors, generated request IDs, and safe failure diagnostics |
 | `task.internal.presentation.PersonalTaskController` | Assignee-scoped task CRUD through `PersonalTasks` |
 | `task.internal.presentation.TaskAdministrationController` | Administrative task CRUD through `TaskAdministration` |
 | `task.internal.presentation.TaskProblemAdvice` | Map task validation, missing resources, and disabled recipients to Problem Details |
@@ -449,6 +465,20 @@ Run only the task HTTP checks from `backend/` with
 `.\mvnw.cmd "-Dtest=TaskHttpTests" test`. These checks use signed JWTs, the real
 security filter chain, and disposable H2 storage; no separate running server is needed.
 
+## Production startup and operations
+
+Deploy with `SPRING_PROFILES_ACTIVE=prod`; it includes the PostgreSQL profile and
+validates configuration before database initialization. Supply database credentials
+and a production JWT signing key, configure direct TLS or explicitly trusted native
+proxy processing, and use HTTPS CORS origins. The local default remains H2.
+
+Only minimal health/liveness/readiness endpoints are public. Other management
+endpoints are denied even to ADMIN. Responses carry generated `X-Request-ID` values;
+unexpected MVC failures log correlation and stack locations without secret messages.
+
+The [deployment runbook](../docs/deployment.md) documents startup, proxy trust,
+rate-limit tuning and scaling limits, health checks, diagnostics, and release checks.
+
 ## Run and verify
 
 From `backend/`, with Java 21+ and Docker running:
@@ -466,10 +496,10 @@ Module documentation is generated under `target/spring-modulith-docs/`.
 For a clean package build with all tests that do not require Docker:
 
 ```powershell
-.\mvnw.cmd "-Dtest=*,!UserModuleTests,!TaskManagerApplicationTests,!PostgresTaskPersistenceTests" clean verify
+.\mvnw.cmd "-Dtest=*,!UserModuleTests,!TaskManagerApplicationTests,!PostgresTaskPersistenceTests,!ProductionHttpTests" clean verify
 ```
 
-The three excluded classes require PostgreSQL Testcontainers. The Docker-free command
+The four excluded classes require PostgreSQL Testcontainers. The Docker-free command
 does not verify PostgreSQL behavior; use the full `verify` command with Docker for
 that coverage. Tests supply their own signing-key fixture; application startup
 requires either the H2 local setup or an external `JWT_SECRET`.
@@ -480,16 +510,19 @@ For focused task HTTP, persistence, application, domain, and architecture verifi
 .\mvnw.cmd "-Dtest=TaskHttpTests,H2TaskPersistenceTests,TaskServiceTests,TaskTests,LayerArchitectureTests,ModularityTests" test
 ```
 
-On 2026-09-27, `.\mvnw.cmd clean verify` passed all 207 tests with no failures,
+On 2026-09-28, `.\mvnw.cmd clean verify` passed all 246 tests with no failures,
 errors, or skips and packaged the executable JAR. The run used Maven 3.9.16,
 JDK 25.0.1 with Java 21 release compilation, Docker 29.8.0, and PostgreSQL 16.15
 from `postgres:16-alpine`.
 
-| Verification scope | Latest result (2026-09-27) |
+| Verification scope | Latest result (2026-09-28) |
 | --- | --- |
-| Full clean verification and executable JAR packaging | Passed; 207 tests |
-| Docker-free regression tests | 182 passed within the full run |
-| PostgreSQL-backed tests | 25 passed: 9 task, 14 account, 2 application/default-security |
+| Full clean verification and executable JAR packaging | Passed; 246 tests |
+| Docker-free regression tests | 218 passed within the full run |
+| PostgreSQL-backed tests | 28 passed: 9 task, 14 account, 2 application/default-security, 3 production HTTP |
+| Production configuration rejection tests | 26 passed |
+| Rate limiter, operational HTTP, and diagnostic tests | 10 passed |
+| Production-profile PostgreSQL and real-server tests | 3 passed |
 | OpenAPI contract/UI and H2 documentation access tests | 10 passed |
 | Documentation disabled by default outside H2 | Passed in the PostgreSQL application tests |
 | Task HTTP tests with signed JWTs and H2 | 44 passed |
@@ -525,10 +558,13 @@ After the one-time local setup above, start the disposable H2 application:
 
 The default `h2` profile uses an in-memory database and Hibernate create/drop, with
 Flyway disabled. Data is lost on shutdown. For a persistent PostgreSQL 16 instance,
-set `SPRING_PROFILES_ACTIVE=postgres`, `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD`
+set `SPRING_PROFILES_ACTIVE=postgres`, `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, and `JWT_SECRET`
 in the environment, then use the same startup command. This profile runs Flyway
 and validates the schema; it never creates/drops it through Hibernate.
 Docker Compose is not supplied yet.
+
+The `postgres` profile alone selects persistence settings; production safeguards
+require `SPRING_PROFILES_ACTIVE=prod`. See the [deployment runbook](../docs/deployment.md).
 
 ## Administrator provisioning and recovery
 

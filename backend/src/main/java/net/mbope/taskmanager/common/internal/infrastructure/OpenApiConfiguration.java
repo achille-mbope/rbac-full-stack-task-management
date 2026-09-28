@@ -41,7 +41,11 @@ class OpenApiConfiguration {
                 boolean admin = path.startsWith("/api/v1/admin/");
                 operation.setTags(List.of(publicEndpoint ? "Authentication" : path.contains("tasks")
                         ? (admin ? "Administrative tasks" : "Tasks") : "Accounts"));
-                if (publicEndpoint) operation.setSecurity(List.of());
+                if (publicEndpoint) {
+                    operation.setSecurity(List.of());
+                    operation.getResponses().addApiResponse("429", problem("Authentication request limit exceeded; retry after the indicated seconds.", "Problem")
+                            .addHeaderObject("Retry-After", header(new StringSchema().pattern("^[0-9]+$"), "Seconds until retry")));
+                }
                 if (admin) operation.addExtension("x-required-roles", List.of("ADMIN"));
                 if (admin) operation.setDescription("Requires ADMIN. Authorization precedes validation and resource lookup.");
                 var responses = operation.getResponses();

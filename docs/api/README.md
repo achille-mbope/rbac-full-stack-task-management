@@ -35,7 +35,8 @@ for executable request/response examples and authorization checks.
 
 See the [runtime documentation guide](../../backend/README.md#runtime-openapi-and-swagger-ui)
 for URLs, bearer-token entry, availability controls, and focused test commands.
-`API_DOCS_ENABLED=true` makes documentation public; leave it disabled on deployed hosts.
+`API_DOCS_ENABLED=true` makes documentation public outside `prod`. Production startup
+rejects enabled documentation properties; see the [deployment guide](../deployment.md).
 
 The generated document uses server `/` and full `/api/v1/...` paths; this contract
 uses server `/api/v1` and relative paths. Tests compare effective URLs, expand
@@ -174,6 +175,7 @@ problem extensions and infrastructure errors outside this contract.
 | 409 | `urn:task-manager:problem:email-conflict` | Email already registered |
 | 409 | `urn:task-manager:problem:assignee-disabled` | Selected recipient is disabled |
 | 415 | `urn:task-manager:problem:unsupported-media-type` | Unsupported request media type |
+| 429 | `urn:task-manager:problem:rate-limited` | Login/registration quota exceeded; includes Retry-After seconds |
 | 500 | `urn:task-manager:problem:internal-error` | Unexpected failure with safe generic detail |
 
 On personal routes, missing and other-assignee tasks produce identical 404 details,
@@ -185,6 +187,22 @@ generic detail `Invalid email or password.` and do not require a bearer challeng
 Unmatched protected routes still require authentication; authenticated unknown
 routes return a Problem Details 404. Never disclose stack traces, SQL, secrets,
 or internal exception messages.
+
+## Operational response behavior
+
+With HTTPS enforcement enabled (required in `prod`), insecure requests reaching
+the security chain return 403 with type `urn:task-manager:problem:https-required`
+and detail `HTTPS is required.` Use the configured HTTPS endpoint; a bearer token
+does not bypass this transport requirement.
+
+Login and registration are rate-limited before body parsing/password hashing. A
+429 response uses Problem Details, Retry-After seconds, and Cache-Control: no-store.
+See the [deployment guide](../deployment.md) for quotas and per-process limitations.
+
+Application-filter responses include a generated X-Request-ID for operator correlation;
+caller-supplied IDs are ignored. CORS exposes X-Request-ID and Retry-After to allowed
+origins. Unexpected failures retain generic 500 bodies while logging safe diagnostic
+locations. Health endpoints are operational resources outside the `/api/v1` contract.
 
 ## Implementation verification
 
@@ -203,8 +221,8 @@ The 44 HTTP tests cover personal/admin access, creation URLs, request validation
 updates, list filters, and audit persistence. See the
 [backend implementation sequence](../../backend/README.md#task-domain-and-next-steps).
 
-The latest `.\mvnw.cmd clean verify` run passed all 207 tests and packaged the
-executable JAR. This includes 182 Docker-free tests and 25 PostgreSQL-backed tests;
+The latest `.\mvnw.cmd clean verify` run passed all 246 tests and packaged the
+executable JAR. This includes 218 Docker-free tests and 28 PostgreSQL-backed tests;
 the nine task PostgreSQL tests verify V2 migration/constraints and audit rollback.
 The previous Docker/cache access blockers are resolved by running with the required
 process access. See the [verification notes](../../backend/README.md#run-and-verify).

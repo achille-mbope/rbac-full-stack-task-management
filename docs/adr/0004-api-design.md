@@ -2,7 +2,7 @@
 
 **Status:** Accepted  
 **Date:** 2026-09-15  
-**Updated:** 2026-09-27
+**Updated:** 2026-09-28
 
 ## Context
 
@@ -67,9 +67,14 @@ handling without depending on exception text. OpenAPI makes contracts reviewable
   `/swagger-ui.html`, `/v3/api-docs`, and `/v3/api-docs.yaml` publicly. Other
   profiles disable them by default. `API_DOCS_ENABLED` controls generation and
   security: false denies all documentation routes to every role; true explicitly
-  makes documentation public. Keep it false on deployed hosts. Swagger UI does
+  makes documentation public outside `prod`. Production startup rejects enabled
+  documentation. Swagger UI does
   not persist bearer authorization across reloads.
 - Verify validation, 401, 403, and ownership-related 404 responses.
+
+- Login and registration may return 429 Problem Details with Retry-After seconds.
+  Generated request IDs support operator correlation without exposing error internals.
+  See the [deployment guide](../deployment.md) for operational behavior.
 
 ## References
 

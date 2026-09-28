@@ -4,15 +4,19 @@ A Spring Boot and Angular learning project focused on modular architecture,
 role-based access control, and organizational task management.
 
 See the [changelog](CHANGELOG.md) for the latest project changes.
+Use the [documentation index](docs/README.md) to find setup, API, deployment,
+and architecture guides.
 
 ## Project Status
 
-**Backend implementation started:** the Spring Boot application and Maven Wrapper
+**Backend APIs and operational safeguards implemented:** the Spring Boot application and Maven Wrapper
 are present. The `user` and `auth` modules provide account REST endpoints, persistence,
 and JWT authentication. See [backend setup and module API](backend/README.md).
 The task domain, application use cases, persistence, and runtime wiring are implemented.
 Personal and administrative task HTTP endpoints and runtime OpenAPI/Swagger UI are
-implemented. The frontend and Docker Compose remain pending.
+implemented. Production startup safeguards, authentication rate limiting, and
+operational diagnostics are also implemented. See the [deployment guide](docs/deployment.md).
+The frontend and Docker Compose remain pending.
 The scope below describes the full planned v1.
 
 ## Planned Scope
@@ -89,7 +93,7 @@ SPA communicating over REST is planned.
 | `auth` | Login, tokens, HTTP security configuration | `user`, `common` |
 | `user` | Accounts, credentials, roles, account administration | `common` |
 | `task` | Task lifecycle, assignment, and access enforcement | `user`, `common` |
-| `common` | Shared utilities, Problem Details, and runtime OpenAPI metadata | None |
+| `common` | Shared utilities, Problem Details, OpenAPI metadata, production checks, and request diagnostics | None |
 
 The `auth`, `user`, and `common` modules are implemented and closed; `task` is a
 closed module with domain, application logic, persistence, HTTP, and principal/audit adapters
@@ -141,8 +145,9 @@ and central authentication, guards, and HTTP interceptors.
   Flyway disabled.
 - **PostgreSQL development:** an externally supplied PostgreSQL 16 instance, Flyway
   migrations, and Hibernate schema validation. Local Docker Compose is planned.
-- **Production:** PostgreSQL with migrations and validation; local Compose does
-  not constitute a production deployment plan.
+- **Production:** explicitly select `prod`, which includes PostgreSQL with migrations
+  and validation, rejects unsafe settings, and requires secure transport. See the
+  [deployment guide](docs/deployment.md); local Compose is not a production deployment plan.
 - **Integration tests:** PostgreSQL Testcontainers running the same migrations.
 
 H2 runs do not validate PostgreSQL behavior. Persistence changes must pass
@@ -160,14 +165,16 @@ Details errors (`application/problem+json`). Runtime OpenAPI 3.1 is available at
 `/v3/api-docs` (JSON) and `/v3/api-docs.yaml`; Swagger UI is at `/swagger-ui.html`.
 Documentation is public in local H2 development and disabled by default elsewhere.
 `API_DOCS_ENABLED=false` disables it locally; setting it to `true` explicitly makes
-it public in another profile. Keep it disabled on deployed hosts. See the
+it public in another non-production profile. The `prod` profile refuses enabled
+documentation. See the
 [runtime documentation guide](backend/README.md#runtime-openapi-and-swagger-ui).
 
 HTTP security is configured by
 [`HttpSecurityConfiguration`](backend/src/main/java/net/mbope/taskmanager/auth/internal/infrastructure/HttpSecurityConfiguration.java)
 for servlet web applications. Registration and login are public; `/api/v1/admin/**`
 requires ADMIN, and API routes otherwise require authentication. Documentation routes
-are public only when enabled and denied to every role when disabled. JWT `roles` map to
+are public only when enabled and denied to every role when disabled. Minimal health
+GET endpoints are public; other management routes are denied even to ADMIN. JWT `roles` map to
 Spring Security authorities with the `ROLE_` prefix. The filter chain is stateless,
 with request caching, CSRF, form login, HTTP Basic, and server-side logout disabled.
 See the [backend security guide](backend/README.md#security-and-http-code-ownership)
@@ -186,8 +193,9 @@ authentication tradeoffs are explicit:
 - Replacing the active signing key across instances invalidates all existing tokens.
 
 Signing keys and database credentials come from environment variables. Deployed
-environments require HTTPS. Login and registration rate limiting is outside v1
-and must be addressed before public deployment.
+environments require HTTPS. Login and registration have bounded per-client and
+per-process request limits. Multiple instances require shared gateway limits; see
+[production limits and diagnostics](docs/deployment.md).
 
 The first administrator is provisioned through the controlled operator procedure in
 [the backend guide](backend/README.md#administrator-provisioning-and-recovery):
@@ -258,10 +266,10 @@ Docker-dependent tests fail if Docker is unavailable.
 To run the tests that do not require Docker and build the package:
 
 ```powershell
-.\mvnw.cmd "-Dtest=*,!UserModuleTests,!TaskManagerApplicationTests,!PostgresTaskPersistenceTests" clean verify
+.\mvnw.cmd "-Dtest=*,!UserModuleTests,!TaskManagerApplicationTests,!PostgresTaskPersistenceTests,!ProductionHttpTests" clean verify
 ```
 
-This excludes the three PostgreSQL-dependent test classes and does not verify
+This excludes the four PostgreSQL-dependent test classes and does not verify
 PostgreSQL migrations or persistence. Run the full suite with Docker before
 treating those behaviors as verified.
 
@@ -302,10 +310,11 @@ frontend install/build commands will be needed once it is scaffolded.
 - [ ] Frontend login, task list, forms, and filters work with the backend.
 - [ ] Local Compose starts PostgreSQL; application startup is documented separately.
 - [x] Development API documentation is available; production access is disabled by default.
+- [x] Production configuration checks, authentication quotas, and health/request diagnostics are implemented.
 - [ ] Setup and verification instructions are reproducible from a fresh checkout.
 
-Latest verification (2026-09-27): `.\mvnw.cmd clean verify` passed all 207 tests
-and built the executable JAR. This includes 182 Docker-free tests and 25 PostgreSQL-backed
+Latest verification (2026-09-28): `.\mvnw.cmd clean verify` passed all 246 tests
+and built the executable JAR. This includes 218 Docker-free tests and 28 PostgreSQL-backed
 tests, including V2 migration/constraint checks and transactional task audit rollback.
 The earlier Docker and Maven-cache failures were restricted-process access errors;
 the normal Maven build succeeds with access to Docker and the dependency cache.
