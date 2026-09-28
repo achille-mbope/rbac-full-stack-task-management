@@ -99,6 +99,18 @@ SPA communicating over REST is planned.
 | `task` | Task lifecycle, assignment, and access enforcement | `user`, `common` |
 | `common` | Shared utilities, Problem Details, OpenAPI metadata, production checks, and request diagnostics | None |
 
+Arrows show allowed dependencies on another module's public API, as declared in
+each module's `package-info.java` and checked by Spring Modulith tests.
+
+```mermaid
+flowchart LR
+    auth["auth"] --> user["user"]
+    task["task"] --> user
+    auth --> common["common"]
+    task --> common
+    user --> common
+```
+
 The `auth`, `user`, and `common` modules are implemented and closed; `task` is a
 closed module with domain, application logic, persistence, HTTP, and principal/audit adapters
 implemented. Public module contracts and DTOs live in module root packages. Internal

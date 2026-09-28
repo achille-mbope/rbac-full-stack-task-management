@@ -8,6 +8,13 @@ their implementation milestone; the newest entry records current verification.
 
 ## Unreleased
 
+### Architecture diagrams
+
+- Added Mermaid diagrams for allowed backend module dependencies, task request
+  processing with transactional audit writes, and production transport alternatives
+  with the proxy trust boundary.
+- Kept diagrams beside their detailed module, security, and deployment guidance.
+
 ### Backend handoff and release documentation
 
 - Updated project and backend READMEs to distinguish completed backend work,

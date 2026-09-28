@@ -31,6 +31,25 @@ empty denies cross-origin browser requests.
 
 ## HTTPS and trusted proxies
 
+The diagram shows two alternative transport modes for the same backend. In proxy
+mode, only the configured proxy peers may supply trusted forwarding information;
+the backend port must be protected from direct public access.
+
+```mermaid
+flowchart LR
+    client["Browser or API client"] -->|"HTTPS: proxy mode"| proxy
+    subgraph boundary ["Restricted application network: proxy trust boundary"]
+        proxy["Trusted reverse proxy: strip and replace forwarding headers"]
+        proxy -->|"Private upstream: native forwarding"| backend["Spring Boot backend: prod"]
+        backend -->|"JDBC"| database[("PostgreSQL")]
+    end
+    client -.->|"Alternative: direct HTTPS, forwarding disabled"| backend
+```
+
+The direct-TLS alternative terminates HTTPS in the application and does not trust
+forwarding headers. Database transport security is configured separately in the
+deployment's PostgreSQL connection settings.
+
 Choose one transport configuration in your external application properties file.
 For TLS at the application, configure a certificate/key store with Spring Boot's
 `server.ssl.*` properties, set `server.ssl.enabled=true`, and retain

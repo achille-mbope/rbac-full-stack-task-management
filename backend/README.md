@@ -289,6 +289,32 @@ Its filter is installed only in the security chain, not as a second servlet filt
 Internal error dispatches are allowed so error responses can be rendered; this
 does not expose normal protected requests.
 
+### Task request flow
+
+This shows an admitted task mutation. Security can reject a request before it
+reaches a controller; application services also enforce access rules. Login and
+registration quotas run before body parsing, but task requests do not consume them.
+
+```mermaid
+flowchart TD
+    client["Client request"] --> diagnostics["Generate request ID"]
+    diagnostics --> security["Security filters: HTTPS when required, CORS, JWT, route authorization"]
+    security --> controller["Task controller: parse and validate request"]
+    controller --> service
+    subgraph transaction ["One task mutation transaction"]
+        service["Application service: access checks and domain rules"]
+        service --> store["TaskStore / JPA task persistence"]
+        service -->|"Admin update or delete"| audit["TaskAudit / JPA audit persistence"]
+        store --> database[("Database")]
+        audit --> database
+    end
+    service -->|"After commit"| response["Controller maps result to HTTP response"]
+```
+
+Task and audit writes share the transaction: an audit failure rolls back the task
+mutation too. Audit records survive task deletion. The response path above shows
+success; security handlers and controller advice map failures to Problem Details.
+
 ## User module API
 
 Public contracts and immutable DTOs live in `net.mbope.taskmanager.user`.
