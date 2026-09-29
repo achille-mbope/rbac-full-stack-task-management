@@ -1,3 +1,5 @@
+import { of } from "rxjs";
+import { TaskService } from "../tasks/task.service";
 import { TestBed } from "@angular/core/testing";
 import { provideRouter, Router } from "@angular/router";
 import { provideHttpClient, withInterceptors } from "@angular/common/http";
@@ -12,6 +14,13 @@ describe("Authentication forms", () => {
         TestBed.configureTestingModule({
             imports: [App],
             providers: [
+                {
+                    provide: TaskService,
+                    useValue: {
+                        list: () =>
+                            of({ items: [], page: 0, size: 20, totalElements: 0, totalPages: 0 }),
+                    },
+                },
                 provideRouter(routes),
                 provideHttpClient(withInterceptors([authInterceptor])),
                 provideHttpClientTesting(),

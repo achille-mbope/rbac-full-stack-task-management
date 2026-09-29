@@ -1,9 +1,9 @@
 # Task Manager frontend
 
 Angular 21 client-side application with standalone components, lazy routes, and SCSS.
-SSR is not enabled. The scaffold includes a responsive navigation shell and preview
-pages, registration/login, guarded routes, and in-memory authentication. Account loading
-and task operations are pending.
+SSR is not enabled. The frontend includes registration/login, guarded routes,
+in-memory authentication, and personal task management. Account administration
+and administrative task workflows remain pending.
 
 ## Run locally
 
@@ -26,15 +26,16 @@ Open http://localhost:4200. Start the backend separately using the
 | `/login`       | Sign in (guests)          |
 | `/register`    | Create account (guests)   |
 | `/home`        | Overview (signed in)      |
-| `/tasks`       | Task preview (signed in)  |
+| `/tasks`       | My tasks (signed in)      |
 | `/users`       | User preview (ADMIN only) |
 | Unknown routes | Redirect to `/home`       |
 
 Navigation uses Angular Router, lazy page imports, page titles, and active-link state.
 Workspace routes require login; `/users` also requires ADMIN. The backend remains
-the authority for API access. Preview pages still load no task/account data.
+the authority for API access. My tasks loads the caller's assigned tasks; Users
+remains a preview without account data.
 
-`HttpClient` is registered in `app.config.ts`. Future services should request
+`HttpClient` is registered in `app.config.ts`. Services request
 relative URLs such as `/api/v1/tasks`. During `npm start`, `proxy.conf.json` forwards
 all `/api/**` requests to `http://127.0.0.1:8080` without changing the path.
 Restart the development server after editing the proxy. See
@@ -72,6 +73,31 @@ Return destinations are limited to the three workspace routes.
 Forms prevent duplicate submission and show validation, credentials, duplicate
 email, rate-limit, and connection errors without exposing backend details.
 
+## My tasks
+
+`/tasks` lists tasks assigned to the signed-in user through `GET /api/v1/tasks`,
+including for ADMIN accounts. Pages contain up to 20 tasks, in the backend's order
+(created newest first). Previous/Next navigation and a refresh action are available.
+
+- Create a self-assigned task with a title, optional description and due date, and
+  a status (To do, In progress, Done). Ownership is determined by the backend.
+- Edit any of those fields; clearing description or due date sends explicit null.
+- Complete a task with a status-only PATCH. Reopen it by editing its status.
+- Delete after inline confirmation. Removing the final task on a page returns to
+  the nearest remaining page.
+
+Titles require a non-whitespace character and allow up to 200 Unicode code points;
+descriptions allow 10,000. Supplied text is preserved. Due dates are calendar dates
+without timezone conversion; past dates are allowed.
+
+Loading, empty, success, and error states are shown. Failed saves retain the draft,
+and server validation messages appear by the corresponding fields. Duplicate
+writes are blocked while a request is pending. Writes are not automatically retried:
+after a network failure, refresh the list to check whether the change was applied.
+A successful write followed by a failed list refresh is reported separately.
+401 responses use the existing session-expiry flow; permission, missing-task,
+conflict, rate-limit, and server failures provide feedback.
+
 ## Build and verify
 
 Run from `frontend/`:
@@ -81,7 +107,14 @@ npm run build
 npm test -- --watch=false
 ```
 
-Authentication verification on 2026-09-29:
+My tasks verification on 2026-09-29:
+
+- Production build and 53 frontend tests passed.
+- Task tests cover CRUD, pagination, validation, errors, bearer authentication,
+  duplicate submission prevention, and cancellation on navigation.
+- Live browser-to-backend task flows and visual review remain unverified.
+
+Earlier authentication verification on 2026-09-29:
 
 - Production build passed.
 - 36 tests passed, covering forms, validation, guarded routing, roles, bearer scope,
@@ -116,7 +149,7 @@ proxy is not included in the production build. Follow the
 
 ## Next implementation milestone
 
-Connect task listing, creation, editing, completion, and deletion. Then implement
-account operations behind the existing ADMIN guard.
+Implement account administration and administrative task workflows behind ADMIN
+guards, and verify the personal task flow against the live backend.
 The first end-to-end milestone is registration, login, task creation/completion,
 and logout through the browser.

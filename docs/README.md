@@ -4,7 +4,7 @@
 | --- | --- |
 | [Project README](../README.md) | Implementation status, local quick start, technology baseline, and delivery checklist |
 | [Backend README](../backend/README.md) | Account/task APIs, authentication setup, manual examples, tests, and administrator recovery |
-| [Frontend README](../frontend/README.md) | Angular setup, authentication, guarded routes, API proxy, and frontend checks |
+| [Frontend README](../frontend/README.md) | Angular setup, authentication, personal tasks, API proxy, and frontend checks |
 | [API guide](api/README.md) | Request/response rules, task lifecycle, Problem Details, and runtime documentation |
 | [OpenAPI contract](api/openapi.json) | Checked-in machine-readable API contract compared with runtime documentation in tests |
 | [Production deployment](deployment.md) | Production profile, TLS/proxy trust, request limits, health, diagnostics, and release checks |
@@ -26,15 +26,16 @@ Start with the project README for disposable H2 development. Use the deployment
 guide for `prod`; selecting `postgres` alone does not enable production safeguards.
 Local PostgreSQL Compose and a packaged production smoke script are available.
 The Angular scaffold includes routing, a responsive layout, and a development API
-proxy. Authentication is implemented; task/account integration remains pending.
+proxy. Authentication and personal tasks are implemented; administrative workflows remain pending.
 
 ## Current handoff
 
 The Angular 21 CSR frontend provides registration/login, memory-only bearer tokens,
-guarded workspace routes, ADMIN navigation, expiry handling, and logout. Its production
-build and 36 tests passed on 2026-09-29. Live browser authentication remains unverified.
-Start with the [frontend guide](../frontend/README.md) to connect task APIs and verify
-the first login-to-task flow.
+guarded workspace routes, ADMIN navigation, expiry handling, logout, and personal task
+CRUD with pagination and error feedback. Its production build and 53 tests passed on
+2026-09-29. Live browser task flows remain unverified. Start with the
+[frontend guide](../frontend/README.md) to verify the login-to-task flow and implement
+administrative workflows.
 
 The backend is ready for frontend integration, with 248 passing tests and a successful
 packaged PostgreSQL/TLS smoke run recorded on 2026-09-28. See

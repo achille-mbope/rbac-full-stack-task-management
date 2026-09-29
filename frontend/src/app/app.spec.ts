@@ -1,3 +1,5 @@
+import { of } from "rxjs";
+import { TaskService } from "./pages/tasks/task.service";
 import { TestBed } from "@angular/core/testing";
 import { provideRouter, Router } from "@angular/router";
 import { provideHttpClient } from "@angular/common/http";
@@ -10,7 +12,18 @@ describe("Application authentication routing", () => {
     beforeEach(async () => {
         await TestBed.configureTestingModule({
             imports: [App],
-            providers: [provideRouter(routes), provideHttpClient(), provideHttpClientTesting()],
+            providers: [
+                {
+                    provide: TaskService,
+                    useValue: {
+                        list: () =>
+                            of({ items: [], page: 0, size: 20, totalElements: 0, totalPages: 0 }),
+                    },
+                },
+                provideRouter(routes),
+                provideHttpClient(),
+                provideHttpClientTesting(),
+            ],
         }).compileComponents();
     });
     afterEach(() => TestBed.inject(HttpTestingController).verify());

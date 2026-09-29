@@ -17,7 +17,7 @@ assignment validation, and authorization through ports. JPA persistence, princip
 adapters, transactional Spring wiring, and personal/admin HTTP adapters are implemented.
 Runtime OpenAPI/Swagger UI, production configuration safeguards, authentication
 rate limiting, and health/request diagnostics are implemented. The Angular shell and
-preview routes and authentication are implemented; task/account integration remains pending.
+authentication and personal task management are implemented; administrative frontend workflows remain pending.
 See the [production deployment guide](../docs/deployment.md).
 
 ## HTTP endpoints
@@ -625,7 +625,8 @@ integration is the next project milestone; it does not require expanding the API
 
 During integration, verify browser CORS, bearer-token handling, expiry and client-side
 logout, validation/permission errors, and rate-limit feedback. These end-to-end flows
-remain unverified; frontend authentication is implemented, and task/account API services are next.
+remain unverified; frontend authentication and personal task API services are implemented.
+Administrative frontend workflows are next.
 The existing shell, lazy-route tests, and development proxy provide the starting point.
 
 Before public release, complete the [deployment checklist](../docs/deployment.md#public-release-checklist)

@@ -106,9 +106,11 @@ bearer interceptor origin allowlist, and backend HTTPS CORS allowlist. The curre
 interceptor deliberately sends tokens only to the same-origin API.
 
 Registration and login are implemented. Workspace pages require authentication,
-and the Users route requires ADMIN; task/account data operations remain pending.
+and the Users route requires ADMIN. Personal task CRUD is implemented; administrative
+frontend workflows remain pending.
 Reloads require sign-in because tokens are stored only in memory. Verify login,
-expiry, logout, and guarded deep links through the deployed HTTPS origin.
+expiry, logout, task CRUD, validation feedback, and guarded deep links through the
+deployed HTTPS origin.
 See the [frontend guide](../frontend/README.md).
 
 ## Authentication request limits

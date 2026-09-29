@@ -1,0 +1,143 @@
+.toolbar,
+.actions,
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+.toolbar h2,
+.toolbar h3 {
+    margin: 0;
+}
+button {
+    border: 1px solid #185a48;
+    border-radius: 0.45rem;
+    padding: 0.65rem 1rem;
+    background: #185a48;
+    color: white;
+    font: inherit;
+    cursor: pointer;
+}
+button.secondary {
+    background: white;
+    color: #185a48;
+}
+button.danger {
+    background: #9b2929;
+    border-color: #9b2929;
+    color: white;
+}
+button.danger.secondary {
+    background: white;
+    color: #9b2929;
+}
+button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+.editor {
+    margin-bottom: 2rem;
+}
+fieldset {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.6rem;
+    min-width: 0;
+}
+label {
+    display: block;
+    font-weight: 600;
+}
+label span,
+.due-date {
+    color: var(--muted);
+    font-weight: 400;
+}
+input,
+textarea,
+select {
+    width: 100%;
+    padding: 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 0.4rem;
+    font: inherit;
+    background: white;
+    color: inherit;
+}
+textarea {
+    resize: vertical;
+}
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: 3px solid #bc7821;
+    outline-offset: 2px;
+}
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.error {
+    color: #9b2929;
+}
+.notice {
+    color: #185a48;
+}
+.task-list {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 1rem;
+}
+.task {
+    min-width: 0;
+}
+.task h3 {
+    font-size: 1.2rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    flex: 1;
+}
+.description {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    margin-top: 1rem;
+}
+.status {
+    border-radius: 1rem;
+    padding: 0.35rem 0.7rem;
+    background: #f1e9d5;
+    white-space: nowrap;
+}
+.status.done {
+    background: #eaf2e3;
+}
+.actions {
+    justify-content: flex-start;
+}
+.delete-confirm {
+    border-top: 1px solid var(--border);
+    margin-top: 1rem;
+    padding-top: 1rem;
+    overflow-wrap: anywhere;
+}
+.list-toolbar {
+    margin-top: 2rem;
+}
+.due-date {
+    margin-top: 1rem;
+}
+@media (max-width: 600px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    .pagination {
+        justify-content: center;
+    }
+}

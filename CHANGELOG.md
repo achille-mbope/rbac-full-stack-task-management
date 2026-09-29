@@ -4,11 +4,22 @@ Notable project changes are recorded here, newest first. The project has no tagg
 releases. Account HTTP endpoints and JWT authentication are implemented, along with
 task domain, application logic, persistence, transactional audit wiring, and HTTP
 endpoints and runtime OpenAPI/Swagger UI. The Angular frontend has a routing/layout
-scaffold, development API proxy, and authentication; task/account integration
-remains pending. Older entries describe the state at
+scaffold, development API proxy, authentication, and personal task management;
+administrative frontend workflows remain pending. Older entries describe the state at
 their implementation milestone; the newest entry records current verification.
 
 ## Unreleased
+
+### My tasks
+
+- Replace the task preview with a paginated list of the caller's assigned tasks.
+- Add creation, editing, completion, and deletion with inline confirmation.
+- Validate titles, description lengths, statuses, and calendar dates; preserve drafts on failure.
+- Display field validation and API errors, loading/empty states, and success feedback.
+- Prevent duplicate writes, refresh after mutations, and recover when the last page disappears.
+- Update READMEs and deployment guidance for the implemented task workflow.
+- Verified production build and 53 frontend tests; live browser task flows remain unverified.
+
 
 ### Frontend authentication
 
