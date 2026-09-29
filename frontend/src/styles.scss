@@ -1,0 +1,108 @@
+:root {
+    font-family: Inter, "Segoe UI", sans-serif;
+    color: #203830;
+    background: #f6f7f3;
+    --muted: #5b6c64;
+    --border: #dce3da;
+}
+* {
+    box-sizing: border-box;
+}
+body {
+    margin: 0;
+}
+a {
+    color: #185a48;
+}
+a:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible {
+    outline: 3px solid #bc7821;
+    outline-offset: 4px;
+}
+h1,
+h2,
+p {
+    margin-top: 0;
+}
+h1 {
+    margin-bottom: 1rem;
+    font-size: clamp(2rem, 4vw, 3rem);
+    line-height: 1.15;
+    letter-spacing: -0.04em;
+}
+h2 {
+    font-size: 1.25rem;
+    line-height: 1.4;
+}
+p {
+    line-height: 1.7;
+}
+.eyebrow {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+}
+.lead {
+    max-width: 38rem;
+    color: var(--muted);
+}
+.page-heading {
+    margin-bottom: 2rem;
+}
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+    margin-top: 2.5rem;
+}
+.card {
+    display: block;
+    padding: 2rem;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+}
+a.card {
+    text-decoration: none;
+}
+a.card:hover {
+    border-color: #185a48;
+}
+.card p {
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+}
+.card-link {
+    font-size: 0.85rem;
+    font-weight: 650;
+}
+.empty-state {
+    text-align: center;
+    padding: 3.5rem 1.5rem;
+}
+.empty-state p {
+    max-width: 32rem;
+    margin: 0 auto;
+}
+.empty-mark {
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    margin: 0 auto 1.25rem;
+    border-radius: 50%;
+    background: #eaf2e3;
+    color: #185a48;
+    font-size: 1.4rem;
+}
+@media (max-width: 720px) {
+    .card-grid {
+        grid-template-columns: 1fr;
+    }
+    .card {
+        padding: 1.5rem;
+    }
+}

@@ -1,0 +1,221 @@
+<section aria-labelledby="tasks-heading">
+    <div class="page-heading toolbar">
+        <div>
+            <p class="eyebrow">Your work</p>
+            <h1 id="tasks-heading">My tasks</h1>
+            <p class="lead">Tasks assigned to you. Make a plan, then take the next step.</p>
+        </div>
+        <button
+            type="button"
+            (click)="openEditor()"
+            [disabled]="busy() || loading() || editorOpen()"
+        >
+            New task
+        </button>
+    </div>
+    @if (notice()) {
+        <p role="status" class="notice">{{ notice() }}</p>
+    }
+    @if (actionError()) {
+        <p role="alert" class="error">{{ actionError() }}</p>
+    }
+
+    @if (editorOpen()) {
+        <section class="card editor" aria-labelledby="editor-heading">
+            <h2 id="editor-heading">{{ editing() ? "Edit task" : "Create task" }}</h2>
+            <form [formGroup]="form" (ngSubmit)="save()" [attr.aria-busy]="busy()">
+                <fieldset [disabled]="busy()">
+                    <label for="task-title">Title <span>(required)</span></label>
+                    <input
+                        id="task-title"
+                        formControlName="title"
+                        aria-describedby="title-error"
+                        [attr.aria-invalid]="!!fieldError('title')"
+                    />
+                    <span id="title-error" class="error">{{ fieldError("title") }}</span>
+                    <label for="task-description">Description <span>(optional)</span></label>
+                    <textarea
+                        id="task-description"
+                        rows="4"
+                        formControlName="description"
+                        aria-describedby="description-error"
+                        [attr.aria-invalid]="!!fieldError('description')"
+                    ></textarea>
+                    <span id="description-error" class="error">{{
+                        fieldError("description")
+                    }}</span>
+                    <div class="form-row">
+                        <div>
+                            <label for="task-status">Status</label>
+                            <select
+                                id="task-status"
+                                formControlName="status"
+                                aria-describedby="status-error"
+                                [attr.aria-invalid]="!!fieldError('status')"
+                            >
+                                <option value="TODO">To do</option>
+                                <option value="IN_PROGRESS">In progress</option>
+                                <option value="DONE">Done</option></select
+                            ><span id="status-error" class="error">{{ fieldError("status") }}</span>
+                        </div>
+                        <div>
+                            <label for="task-dueDate">Due date <span>(optional)</span></label>
+                            <input
+                                id="task-dueDate"
+                                type="date"
+                                formControlName="dueDate"
+                                aria-describedby="dueDate-error"
+                                [attr.aria-invalid]="!!fieldError('dueDate')"
+                            />
+                            <span id="dueDate-error" class="error">{{
+                                fieldError("dueDate")
+                            }}</span>
+                        </div>
+                    </div>
+                </fieldset>
+                <div class="actions">
+                    <button type="submit" [disabled]="busy() || loading()">
+                        {{ busy() ? "Saving…" : "Save task" }}
+                    </button>
+                    <button
+                        type="button"
+                        class="secondary"
+                        (click)="cancelEditor()"
+                        [disabled]="busy()"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </section>
+    }
+
+    <div class="toolbar list-toolbar">
+        <h2>Your task list</h2>
+        <button type="button" class="secondary" (click)="load()" [disabled]="loading() || busy()">
+            Refresh list
+        </button>
+    </div>
+    @if (loading()) {
+        <p role="status">Loading tasks…</p>
+    }
+    @if (listError()) {
+        <p role="alert" class="error">{{ listError() }}</p>
+    }
+    @if (page(); as result) {
+        @if (result.items.length === 0) {
+            <div class="card empty-state">
+                <h2>No tasks yet</h2>
+                <p>Create your first task to get started.</p>
+            </div>
+        } @else {
+            <ul class="task-list">
+                @for (task of result.items; track task.id) {
+                    <li class="card task">
+                        <div class="toolbar">
+                            <h3>{{ task.title }}</h3>
+                            <span class="status" [class.done]="task.status === 'DONE'">{{
+                                labels[task.status]
+                            }}</span>
+                        </div>
+                        @if (task.description) {
+                            <p class="description">{{ task.description }}</p>
+                        }
+                        <p class="due-date">
+                            Due:
+                            @if (task.dueDate) {
+                                <time [attr.datetime]="task.dueDate">{{ task.dueDate }}</time>
+                            } @else {
+                                No due date
+                            }
+                        </p>
+                        <div class="actions">
+                            <button
+                                type="button"
+                                class="secondary"
+                                (click)="openEditor(task)"
+                                [disabled]="busy() || editorOpen() || !!deleting()"
+                                [attr.aria-label]="'Edit ' + task.title"
+                            >
+                                Edit
+                            </button>
+                            @if (task.status !== "DONE") {
+                                <button
+                                    type="button"
+                                    (click)="complete(task)"
+                                    [disabled]="busy() || editorOpen() || !!deleting()"
+                                    [attr.aria-label]="'Complete ' + task.title"
+                                >
+                                    Complete
+                                </button>
+                            }
+                            <button
+                                type="button"
+                                class="danger secondary"
+                                (click)="askDelete(task)"
+                                [disabled]="busy() || editorOpen() || !!deleting()"
+                                [attr.aria-label]="'Delete ' + task.title"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                        @if (deleting()?.id === task.id) {
+                            <div
+                                class="delete-confirm"
+                                role="group"
+                                aria-label="Confirm task deletion"
+                            >
+                                <p>Delete “{{ task.title }}”? This cannot be undone.</p>
+                                <div class="actions">
+                                    <button
+                                        type="button"
+                                        class="danger"
+                                        (click)="confirmDelete()"
+                                        [disabled]="busy()"
+                                    >
+                                        Confirm delete
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="secondary"
+                                        (click)="cancelDelete()"
+                                        [disabled]="busy()"
+                                    >
+                                        Keep task
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    </li>
+                }
+            </ul>
+            <nav class="pagination" aria-label="Task pages">
+                <button
+                    type="button"
+                    class="secondary"
+                    (click)="load(result.page - 1)"
+                    [disabled]="busy() || editorOpen() || !!deleting() || result.page === 0"
+                >
+                    Previous
+                </button>
+                <span
+                    >Page {{ result.page + 1 }} of {{ result.totalPages }} ·
+                    {{ result.totalElements }} tasks</span
+                >
+                <button
+                    type="button"
+                    class="secondary"
+                    (click)="load(result.page + 1)"
+                    [disabled]="
+                        busy() ||
+                        editorOpen() ||
+                        !!deleting() ||
+                        result.page + 1 >= result.totalPages
+                    "
+                >
+                    Next
+                </button>
+            </nav>
+        }
+    }
+</section>

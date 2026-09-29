@@ -16,7 +16,9 @@ The task domain, application use cases, persistence, and runtime wiring are impl
 Personal and administrative task HTTP endpoints and runtime OpenAPI/Swagger UI are
 implemented. Production startup safeguards, authentication rate limiting, and
 operational diagnostics are also implemented. See the [deployment guide](docs/deployment.md).
-Local PostgreSQL Docker Compose is available; the frontend remains pending.
+Local PostgreSQL Docker Compose and an Angular frontend scaffold are available.
+The frontend has lazy routes, a responsive layout, and a development API proxy;
+authentication and personal task management are implemented; administration remains pending.
 The scope below describes the full planned v1.
 
 The implemented backend is ready for frontend integration. The full Maven suite
@@ -53,7 +55,7 @@ v1 scope. Draft task fields and status transitions are defined in the
 Registration always assigns `USER`. Account permissions are enforced by backend
 services and HTTP security. Task application services enforce assignment and access
 rules through persistence and principal adapters, with H2 integration coverage.
-Frontend guards remain planned. See
+Frontend guards require sign-in for workspace routes and ADMIN for user administration. See
 [ADR-0006](docs/adr/0006-security.md) for the authorization policy.
 
 ## Planned Technology Baseline
@@ -64,8 +66,8 @@ Frontend guards remain planned. See
 | Spring Boot | 3.5.x |
 | Spring Modulith | 1.4.x |
 | Backend build | Maven through the committed Maven Wrapper |
-| Frontend | Angular 20 with matching Angular CLI |
-| UI library, if used | Angular Material 20 |
+| Frontend | Angular 21 with matching Angular CLI |
+| UI library | None; the scaffold uses SCSS |
 | Node.js | 22.x, at least 22.12.0 |
 | Frontend package manager | npm with a committed lockfile |
 | Disposable development database | H2 in memory |
@@ -74,19 +76,19 @@ Frontend guards remain planned. See
 | Authentication | HS256 JWT bearer tokens |
 | Runtime API documentation | OpenAPI 3.1 and Swagger UI through springdoc |
 
-Backend versions are pinned in its POM and Maven Wrapper. Frontend versions remain
-to be pinned. Version selection and maintenance requirements are defined in
+Backend versions are pinned in its POM and Maven Wrapper. Frontend dependency
+resolutions are recorded in its npm lockfile. Version selection and maintenance requirements are defined in
 [ADR-0005](docs/adr/0005-build-tool.md).
 
 ## Architecture
 
 The monorepo contains a single Spring Boot backend deployable. A separate Angular
-SPA communicating over REST is planned.
+SPA provides authentication and personal task management; administration is the next milestone.
 
 | Location | Purpose | Current state |
 | --- | --- | --- |
 | `backend/` | Spring Boot modular monolith | Account/task HTTP APIs, JWT security, persistence, and transactional task auditing implemented |
-| `frontend/` | Angular SPA | Not scaffolded |
+| `frontend/` | Angular SPA | Authentication, personal task CRUD, guarded pages, and development API proxy |
 | `docs/adr/` | Accepted architecture decisions | Available |
 | `docker-compose.yml` | Local PostgreSQL infrastructure | Persistent volume, loopback port, and health check implemented |
 
@@ -138,7 +140,7 @@ stable account IDs without cross-module JPA associations.
 
 Runtime API documentation is implemented and compared with the checked-in contract.
 Local PostgreSQL Compose and packaged production smoke testing are available.
-The frontend remains pending.
+Frontend authentication and personal task management are implemented; administration remains pending.
 
 See the [task implementation guide](backend/README.md#task-domain-and-next-steps) for the
 implemented rules and remaining responsibilities.
@@ -153,8 +155,11 @@ Synchronous APIs support interactions requiring an immediate answer, such as
 credential verification. Events are optional for independent reactions, with
 delivery and consistency requirements defined before introducing them.
 
-The Angular frontend is planned around feature folders, with shared components
-and central authentication, guards, and HTTP interceptors.
+The Angular frontend uses standalone components and lazy pages under `src/app/pages/`.
+Its client-side layout includes an overview, personal task management, and a user administration preview. Authentication uses in-memory bearer tokens and guarded routes; SSR is not enabled.
+Registration creates an account, then asks the user to sign in. Reload, expiry, and
+logout require a fresh login. Logout clears browser memory but does not revoke a
+copied JWT; it remains valid until expiry, normally 15 minutes.
 
 ## Database Profiles
 
@@ -250,7 +255,7 @@ existing file. On subsequent starts, run only `.\mvnw.cmd spring-boot:run` from
 The default `h2` profile starts the API at `http://localhost:8080` without Docker
 or a separate database. H2 data is lost when the application stops. Press `Ctrl+C`
 to stop it. Open `http://localhost:8080/swagger-ui.html` to explore the API.
-The frontend is not implemented yet; an unauthenticated request to `/` returns 401.
+The frontend runs separately on port 4200; an unauthenticated request to the backend's `/` returns 401.
 
 On Unix, run `pwsh ./setup-local.ps1` if PowerShell is installed, then
 `./mvnw spring-boot:run`, both from `backend/`. Alternatively, supply an external
@@ -258,6 +263,25 @@ On Unix, run `pwsh ./setup-local.ps1` if PowerShell is installed, then
 [authentication configuration guide](backend/README.md#authentication-configuration).
 PostgreSQL startup requires an external signing key and database configuration;
 see the [backend guide](backend/README.md#run-and-verify).
+
+### Start the frontend
+
+Keep the backend running, then open a second terminal at the repository root:
+
+```powershell
+cd frontend
+npm ci
+npm start
+```
+
+Open `http://localhost:4200`. The development server forwards `/api/**` to the backend
+on `http://127.0.0.1:8080`. My tasks supports listing, creation, editing, completion,
+and deletion of assigned tasks. Users remains a preview. Registration and sign-in
+are available at `/register` and `/login`; `/users` requires ADMIN.
+
+From `frontend/`, run `npm run build` and `npm test -- --watch=false` to verify the
+scaffold. See the [frontend guide](frontend/README.md) for prerequisites and proxy
+troubleshooting. Production hosting needs its own API forwarding and SPA fallback.
 
 ### Test registration and login with Postman
 
@@ -297,8 +321,9 @@ On Unix, use `./mvnw` instead of `.\mvnw.cmd`, keeping the test selector quoted.
 Test reports are written to `backend/target/surefire-reports/`.
 
 See the [backend guide](backend/README.md) for account endpoints, module contracts,
-and administrator provisioning. The frontend remains pending; Node.js/npm and
-frontend install/build commands will be needed once it is scaffolded.
+and administrator provisioning. For the frontend, run `npm ci` and `npm start` from
+`frontend/`, then open `http://localhost:4200`. See the [frontend guide](frontend/README.md)
+for routing, proxy settings, tests, and production hosting requirements.
 
 ## Architecture Decision Records
 
@@ -313,13 +338,15 @@ frontend install/build commands will be needed once it is scaffolded.
 ## V1 Delivery Checklist
 
 - [x] Backend scaffolded with pinned tools and dependencies.
-- [ ] Frontend scaffolded with pinned tools and dependencies.
+- [x] Frontend scaffolded with routing, a development API proxy, and an npm lockfile.
 - [x] Task fields, validation, and lifecycle specified in the draft API contract.
 - [x] Task domain implemented and verified with domain and architecture tests.
 - [x] Task application use cases and authorization verified independently of persistence.
 - [x] Task persistence, principal wiring, audit survival, and rollback verified against H2.
 - [x] Account registration, login, token rejection, and password changes verified through HTTP tests.
-- [ ] Frontend authentication, expiry handling, and client-side logout work end to end.
+- [x] Frontend registration/login, memory-only tokens, guards, expiry handling, and logout implemented.
+- [x] Personal task listing, creation, editing, completion, deletion, validation, and API feedback implemented.
+- [ ] Live browser authentication and task flows verified end to end.
 - [x] Task application tests cover user isolation, admin access, and assignment validation.
 - [x] Task isolation, self-assignment, and admin assignment verified through HTTP and H2 persistence.
 - [x] Administrative task edits/deletions and audit rollback verified against H2.
@@ -345,6 +372,19 @@ the normal Maven build succeeds with access to Docker and the dependency cache.
 
 The [packaged production smoke test](docs/deployment.md#packaged-production-smoke-test)
 also passed against isolated PostgreSQL over certificate-verified TLS.
+
+Frontend My tasks verification (2026-09-29): production build and 53 tests passed,
+including CRUD, pagination, validation, request errors, and authentication integration.
+Live browser-to-backend task flows and visual review remain unverified.
+
+Earlier frontend authentication verification (2026-09-29): the production build and all
+36 tests passed. Forms, role guards, bearer scoping, expiry, logout, and stale
+responses are covered with HTTP mocks. Live browser authentication remains unverified.
+
+Earlier scaffold verification (2026-09-29): the production build and all six tests passed.
+A live development-proxy check returned the backend's expected 401 Problem Details
+for `/api/v1/tasks`; direct loading of `/tasks` served the app shell. Visual browser
+verification and authenticated frontend/backend flows remain unverified.
 
 CI configuration is outside v1 scope. Local verification is required; future CI
 must run the same checks.

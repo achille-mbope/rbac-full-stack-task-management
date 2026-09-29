@@ -88,6 +88,31 @@ Use an external configuration path appropriate to the deployment host. Container
 are optional; the repository provides local PostgreSQL Compose, but no application
 Dockerfile or production orchestration.
 
+## Frontend hosting
+
+The Angular scaffold uses client-side rendering without SSR. Build it with
+`npm ci` and `npm run build` from `frontend/`, then serve the contents of
+`frontend/dist/Taskmanager/browser/` through the deployment's static web server.
+
+Forward `/api/**` to Spring Boot before applying a fallback to `index.html` for
+frontend routes such as `/home`, `/tasks`, and `/users`. API errors must remain API
+responses rather than becoming the SPA HTML page. Static asset requests should
+resolve to actual files. Angular's `proxy.conf.json` is used only by `npm start`;
+it does not configure production routing or backend proxy trust.
+
+Same-origin hosting lets API services use relative `/api/v1/...` URLs. If deploying
+the frontend and API on separate origins, explicitly adapt the client API URL,
+bearer interceptor origin allowlist, and backend HTTPS CORS allowlist. The current
+interceptor deliberately sends tokens only to the same-origin API.
+
+Registration and login are implemented. Workspace pages require authentication,
+and the Users route requires ADMIN. Personal task CRUD is implemented; administrative
+frontend workflows remain pending.
+Reloads require sign-in because tokens are stored only in memory. Verify login,
+expiry, logout, task CRUD, validation feedback, and guarded deep links through the
+deployed HTTPS origin.
+See the [frontend guide](../frontend/README.md).
+
 ## Authentication request limits
 
 POST login and registration requests are limited before JSON parsing and password
